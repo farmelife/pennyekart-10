@@ -179,6 +179,9 @@ const PurchasePage = () => {
       await supabase.from("products").update({ mrp: item.mrp }).eq("id", item.product_id);
     }
 
+    // Increment counter in DB to claim this number
+    await supabase.rpc("get_next_purchase_number");
+
     const rows = selectedGodownIds.flatMap(godownId =>
       validItems.map(item => ({
         godown_id: godownId,
@@ -187,6 +190,7 @@ const PurchasePage = () => {
         purchase_price: item.purchase_rate,
         batch_number: item.batch_number || null,
         expiry_date: item.expiry_date || null,
+        purchase_number: purchaseNumber,
       }))
     );
 
@@ -198,9 +202,7 @@ const PurchasePage = () => {
     } else {
       toast({ title: `Purchase #${purchaseNumber} — Stock added to ${selectedGodownIds.length} godown(s), ${validItems.length} product(s)` });
       setItems([]);
-      setSelectedGodownIds([]);
-      // Increment counter in DB and fetch next number
-      await supabase.rpc("get_next_purchase_number");
+      // Fetch next number
       await fetchNextPurchaseNumber();
       setPurchaseDate(new Date().toISOString().split("T")[0]);
       if (mrpUpdates.length > 0) {

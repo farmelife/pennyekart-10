@@ -60,6 +60,7 @@ interface StockItem {
   batch_number: string | null;
   expiry_date: string | null;
   created_at: string;
+  purchase_number: string | null;
   products?: Product;
 }
 
@@ -423,17 +424,28 @@ const GodownsPage = () => {
 
   const renderStockDetails = (g: Godown) => {
     const stock = getStockForGodown(g.id);
+    // Group by product_id, sum quantities
+    const grouped = stock.reduce<Record<string, { product_name: string; mrp: number; total_qty: number }>>((acc, s) => {
+      const pid = s.product_id;
+      if (!acc[pid]) {
+        acc[pid] = { product_name: s.products?.name ?? "Unknown", mrp: s.products?.mrp ?? 0, total_qty: 0 };
+      }
+      acc[pid].total_qty += s.quantity;
+      return acc;
+    }, {});
+    const groupedList = Object.entries(grouped).sort((a, b) => a[1].product_name.localeCompare(b[1].product_name));
+
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-muted-foreground">Stock Items ({stock.length})</p>
+          <p className="text-sm font-medium text-muted-foreground">Stock Items ({groupedList.length} products)</p>
           {g.godown_type === "area" && (
             <Button size="sm" onClick={() => { setStockGodown(g); setStockForm({ product_id: "", quantity: 0, purchase_price: 0, batch_number: "", expiry_date: "" }); setStockDialogOpen(true); }}>
               <Plus className="mr-1 h-3 w-3" /> Add Stock
             </Button>
           )}
         </div>
-        {stock.length === 0 ? (
+        {groupedList.length === 0 ? (
           <p className="text-sm text-muted-foreground italic py-4 text-center">No stock items</p>
         ) : (
           <div className="overflow-x-auto">
@@ -441,26 +453,16 @@ const GodownsPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead>Qty</TableHead>
+                  <TableHead>Total Qty</TableHead>
                   <TableHead>MRP</TableHead>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Expiry</TableHead>
-                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stock.map(s => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.products?.name ?? "Unknown"}</TableCell>
-                    <TableCell>{s.quantity}</TableCell>
-                    <TableCell>₹{s.products?.mrp ?? 0}</TableCell>
-                    <TableCell>{s.batch_number || "-"}</TableCell>
-                    <TableCell>{s.expiry_date || "-"}</TableCell>
-                    <TableCell>
-                      <Button size="icon" variant="ghost" onClick={() => handleDeleteStock(s.id)}>
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
-                    </TableCell>
+                {groupedList.map(([pid, info]) => (
+                  <TableRow key={pid}>
+                    <TableCell className="font-medium">{info.product_name}</TableCell>
+                    <TableCell>{info.total_qty}</TableCell>
+                    <TableCell>₹{info.mrp}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -482,10 +484,21 @@ const GodownsPage = () => {
     }
     history.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+    // Group by purchase_number (or by date if no purchase_number)
+    const bills: Record<string, { date: string; items: typeof history }> = {};
+    history.forEach(s => {
+      const key = s.purchase_number || `no-bill-${s.id}`;
+      if (!bills[key]) {
+        bills[key] = { date: new Date(s.created_at).toLocaleDateString(), items: [] };
+      }
+      bills[key].items.push(s);
+    });
+    const billEntries = Object.entries(bills);
+
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <p className="text-sm font-medium text-muted-foreground">Purchase History</p>
+          <p className="text-sm font-medium text-muted-foreground">Purchase History (Bill-wise)</p>
           <div className="flex gap-2 items-center">
             <Input type="date" className="w-36 h-8 text-xs" value={purchaseHistoryFrom} onChange={e => setPurchaseHistoryFrom(e.target.value)} placeholder="From" />
             <span className="text-xs text-muted-foreground">to</span>
@@ -495,36 +508,48 @@ const GodownsPage = () => {
             )}
           </div>
         </div>
-        {history.length === 0 ? (
+        {billEntries.length === 0 ? (
           <p className="text-sm text-muted-foreground italic py-4 text-center">No purchase history</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Qty</TableHead>
-                  <TableHead>Purchase Price</TableHead>
-                  <TableHead>MRP</TableHead>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Expiry</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.map(s => (
-                  <TableRow key={s.id}>
-                    <TableCell className="text-xs">{new Date(s.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium">{s.products?.name ?? "Unknown"}</TableCell>
-                    <TableCell>{s.quantity}</TableCell>
-                    <TableCell>₹{s.purchase_price}</TableCell>
-                    <TableCell>₹{s.products?.mrp ?? 0}</TableCell>
-                    <TableCell>{s.batch_number || "-"}</TableCell>
-                    <TableCell>{s.expiry_date || "-"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-4">
+            {billEntries.map(([billNo, bill]) => (
+              <Card key={billNo} className="border">
+                <CardHeader className="py-2 px-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-mono">
+                      {billNo.startsWith("no-bill-") ? "No Bill #" : `Bill #${billNo}`}
+                    </CardTitle>
+                    <span className="text-xs text-muted-foreground">{bill.date}</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 pb-3 pt-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Qty</TableHead>
+                        <TableHead>Purchase Price</TableHead>
+                        <TableHead>MRP</TableHead>
+                        <TableHead>Batch</TableHead>
+                        <TableHead>Expiry</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {bill.items.map(s => (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-medium">{s.products?.name ?? "Unknown"}</TableCell>
+                          <TableCell>{s.quantity}</TableCell>
+                          <TableCell>₹{s.purchase_price}</TableCell>
+                          <TableCell>₹{s.products?.mrp ?? 0}</TableCell>
+                          <TableCell>{s.batch_number || "-"}</TableCell>
+                          <TableCell>{s.expiry_date || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>

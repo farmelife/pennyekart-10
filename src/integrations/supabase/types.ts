@@ -130,6 +130,7 @@ export type Database = {
           godown_id: string
           id: string
           product_id: string
+          purchase_number: string | null
           purchase_price: number
           quantity: number
           updated_at: string
@@ -141,6 +142,7 @@ export type Database = {
           godown_id: string
           id?: string
           product_id: string
+          purchase_number?: string | null
           purchase_price?: number
           quantity?: number
           updated_at?: string
@@ -152,6 +154,7 @@ export type Database = {
           godown_id?: string
           id?: string
           product_id?: string
+          purchase_number?: string | null
           purchase_price?: number
           quantity?: number
           updated_at?: string
