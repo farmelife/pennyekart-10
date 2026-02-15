@@ -21,9 +21,24 @@ interface Profile {
   user_type: string;
   local_body_id: string | null;
   ward_number: number | null;
+  local_body_name?: string | null;
+  local_body_type?: string | null;
+  district_name?: string | null;
 }
 
 interface Role {
+  id: string;
+  name: string;
+}
+
+interface LocalBody {
+  id: string;
+  name: string;
+  body_type: string;
+  district_id: string;
+}
+
+interface District {
   id: string;
   name: string;
 }
@@ -43,17 +58,40 @@ const UsersPage = () => {
   const { toast } = useToast();
 
   const fetchData = async () => {
-    const [usersRes, rolesRes] = await Promise.all([
+    const [usersRes, rolesRes, localBodiesRes, districtsRes] = await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("roles").select("*"),
+      supabase.from("locations_local_bodies").select("id, name, body_type, district_id"),
+      supabase.from("locations_districts").select("id, name"),
     ]);
-    setUsers((usersRes.data as unknown as Profile[]) ?? []);
+
+    const localBodies = (localBodiesRes.data ?? []) as LocalBody[];
+    const districts = (districtsRes.data ?? []) as District[];
+
+    const enrichedUsers = ((usersRes.data ?? []) as unknown as Profile[]).map((u) => {
+      if (u.local_body_id) {
+        const lb = localBodies.find((l) => l.id === u.local_body_id);
+        if (lb) {
+          const dist = districts.find((d) => d.id === lb.district_id);
+          return {
+            ...u,
+            local_body_name: lb.name,
+            local_body_type: lb.body_type,
+            district_name: dist?.name ?? null,
+          };
+        }
+      }
+      return u;
+    });
+
+    setUsers(enrichedUsers);
     setRoles((rolesRes.data as Role[]) ?? []);
   };
 
   useEffect(() => { fetchData(); }, []);
 
   const filteredUsers = filterType === "all" ? users : users.filter(u => u.user_type === filterType);
+  const isCustomerTab = filterType === "customer";
 
   const updateRole = async (userId: string, roleId: string) => {
     const { error } = await supabase.from("profiles").update({ role_id: roleId === "none" ? null : roleId }).eq("user_id", userId);
@@ -81,6 +119,9 @@ const UsersPage = () => {
     }
   };
 
+  const customerColSpan = isSuperAdmin ? 8 : 7;
+  const otherColSpan = isSuperAdmin ? 6 : 5;
+
   return (
     <AdminLayout>
       <h1 className="mb-4 text-2xl font-bold">Users Management</h1>
@@ -98,13 +139,24 @@ const UsersPage = () => {
         </TabsList>
       </Tabs>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Email / Mobile</TableHead>
-              <TableHead>Type</TableHead>
+              {isCustomerTab ? (
+                <>
+                  <TableHead>Mobile</TableHead>
+                  <TableHead>District</TableHead>
+                  <TableHead>Panchayath</TableHead>
+                  <TableHead>Ward</TableHead>
+                </>
+              ) : (
+                <>
+                  <TableHead>Email / Mobile</TableHead>
+                  <TableHead>Type</TableHead>
+                </>
+              )}
               <TableHead>Approved</TableHead>
               <TableHead>Role</TableHead>
               {isSuperAdmin && <TableHead>Super Admin</TableHead>}
@@ -114,15 +166,30 @@ const UsersPage = () => {
             {filteredUsers.map((u) => (
               <TableRow key={u.id}>
                 <TableCell>{u.full_name ?? "—"}</TableCell>
-                <TableCell>
-                  <div>{u.email ?? "—"}</div>
-                  {u.mobile_number && <div className="text-xs text-muted-foreground">{u.mobile_number}</div>}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={getTypeBadgeVariant(u.user_type)}>
-                    {USER_TYPE_LABELS[u.user_type] ?? u.user_type}
-                  </Badge>
-                </TableCell>
+                {isCustomerTab ? (
+                  <>
+                    <TableCell>{u.mobile_number ?? "—"}</TableCell>
+                    <TableCell>{u.district_name ?? "—"}</TableCell>
+                    <TableCell>
+                      {u.local_body_name ? (
+                        <span>{u.local_body_name} <span className="text-xs text-muted-foreground">({u.local_body_type})</span></span>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell>{u.ward_number ?? "—"}</TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell>
+                      <div>{u.email ?? "—"}</div>
+                      {u.mobile_number && <div className="text-xs text-muted-foreground">{u.mobile_number}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getTypeBadgeVariant(u.user_type)}>
+                        {USER_TYPE_LABELS[u.user_type] ?? u.user_type}
+                      </Badge>
+                    </TableCell>
+                  </>
+                )}
                 <TableCell>
                   <Switch checked={u.is_approved} onCheckedChange={() => toggleApproval(u.user_id, u.is_approved)} />
                 </TableCell>
@@ -148,7 +215,7 @@ const UsersPage = () => {
             ))}
             {filteredUsers.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isCustomerTab ? customerColSpan : otherColSpan} className="text-center text-muted-foreground py-8">
                   No users found
                 </TableCell>
               </TableRow>
