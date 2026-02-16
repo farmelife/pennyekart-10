@@ -64,6 +64,19 @@ interface StockItem {
   products?: Product;
 }
 
+interface SellerProductItem {
+  id: string;
+  name: string;
+  price: number;
+  mrp: number;
+  stock: number;
+  category: string | null;
+  is_approved: boolean;
+  is_active: boolean;
+  area_godown_id: string | null;
+  seller_id: string;
+}
+
 interface StockTransfer {
   id: string;
   from_godown_id: string;
@@ -116,6 +129,7 @@ const GodownsPage = () => {
   const [transferGodown, setTransferGodown] = useState<Godown | null>(null);
   const [transferForm, setTransferForm] = useState({ product_id: "", quantity: 0, to_godown_id: "", batch_number: "", transfer_type: "transfer" });
   const [godownInnerTab, setGodownInnerTab] = useState<Record<string, string>>({});
+  const [sellerProducts, setSellerProducts] = useState<SellerProductItem[]>([]);
 
   const fetchGodowns = async () => {
     const { data } = await supabase.from("godowns").select("*").order("created_at", { ascending: false });
@@ -154,6 +168,11 @@ const GodownsPage = () => {
     if (data) setStockTransfers(data as unknown as StockTransfer[]);
   };
 
+  const fetchSellerProducts = async () => {
+    const { data } = await supabase.from("seller_products").select("id, name, price, mrp, stock, category, is_approved, is_active, area_godown_id, seller_id");
+    if (data) setSellerProducts(data as SellerProductItem[]);
+  };
+
   useEffect(() => {
     fetchGodowns();
     fetchLocalBodies();
@@ -162,6 +181,7 @@ const GodownsPage = () => {
     fetchProducts();
     fetchGodownStock();
     fetchStockTransfers();
+    fetchSellerProducts();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -444,6 +464,11 @@ const GodownsPage = () => {
     }, {});
     const groupedList = Object.entries(grouped).sort((a, b) => a[1].product_name.localeCompare(b[1].product_name));
 
+    // Get seller products for this godown (area godowns only)
+    const godownSellerProducts = g.godown_type === "area"
+      ? sellerProducts.filter(sp => sp.area_godown_id === g.id && sp.is_approved && sp.is_active)
+      : [];
+
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -476,6 +501,41 @@ const GodownsPage = () => {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* Seller Products Section for Area Godowns */}
+        {g.godown_type === "area" && (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Seller Products ({godownSellerProducts.length})</p>
+            {godownSellerProducts.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic py-2 text-center">No approved seller products</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>MRP</TableHead>
+                      <TableHead>Category</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {godownSellerProducts.map(sp => (
+                      <TableRow key={sp.id}>
+                        <TableCell className="font-medium">{sp.name}</TableCell>
+                        <TableCell>{sp.stock}</TableCell>
+                        <TableCell>₹{sp.price}</TableCell>
+                        <TableCell>₹{sp.mrp}</TableCell>
+                        <TableCell>{sp.category || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         )}
       </div>

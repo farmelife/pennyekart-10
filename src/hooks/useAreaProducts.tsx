@@ -31,15 +31,17 @@ export const useAreaProducts = () => {
       // Get micro godown IDs (matching panchayath + ward)
       const { data: microWards } = await supabase
         .from("godown_wards")
-        .select("godown_id")
+        .select("godown_id, godowns!inner(godown_type)")
         .eq("local_body_id", profile.local_body_id)
-        .eq("ward_number", profile.ward_number);
+        .eq("ward_number", profile.ward_number)
+        .eq("godowns.godown_type", "micro");
 
-      // Get area godown IDs (matching panchayath only)
+      // Get area godown IDs (matching panchayath only, exclude local godowns)
       const { data: areaLocalBodies } = await supabase
         .from("godown_local_bodies")
-        .select("godown_id")
-        .eq("local_body_id", profile.local_body_id);
+        .select("godown_id, godowns!inner(godown_type)")
+        .eq("local_body_id", profile.local_body_id)
+        .eq("godowns.godown_type", "area");
 
       const godownIds = new Set<string>();
       microWards?.forEach(r => godownIds.add(r.godown_id));

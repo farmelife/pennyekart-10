@@ -142,6 +142,8 @@ const SellingPartnerDashboard = () => {
     const mrp = parseFloat(form.mrp) || 0;
     const discountRate = parseFloat(form.discount_rate) || 0;
     const sellingPrice = mrp - discountRate;
+    // Auto-assign godown if only one assigned and none selected
+    const godownId = form.area_godown_id || (assignedGodowns.length === 1 ? assignedGodowns[0].id : null);
     const { error } = await supabase.from("seller_products").insert({
       seller_id: user.id,
       name: form.name.trim(),
@@ -152,7 +154,7 @@ const SellingPartnerDashboard = () => {
       discount_rate: discountRate,
       category: form.category.trim() || null,
       stock: parseInt(form.stock) || 0,
-      area_godown_id: form.area_godown_id || null,
+      area_godown_id: godownId,
       image_url: form.image_url || null,
       image_url_2: form.image_url_2 || null,
       image_url_3: form.image_url_3 || null,
