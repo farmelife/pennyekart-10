@@ -231,15 +231,26 @@ const DeliveryManagementPage = () => {
                       ) : "—"}
                     </TableCell>
                     <TableCell>
-                      {(s.assigned_wards ?? []).length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {s.assigned_wards!.map((w, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {w.local_body_name} W{w.ward_number}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : <span className="text-sm text-muted-foreground">None</span>}
+                      {(s.assigned_wards ?? []).length > 0 ? (() => {
+                        // Group by local body
+                        const grouped: Record<string, number[]> = {};
+                        s.assigned_wards!.forEach((w) => {
+                          if (!grouped[w.local_body_name]) grouped[w.local_body_name] = [];
+                          grouped[w.local_body_name].push(w.ward_number);
+                        });
+                        return (
+                          <div className="space-y-0.5">
+                            {Object.entries(grouped).map(([name, wards]) => (
+                              <div key={name} className="text-sm">
+                                <span className="font-medium">{name}</span>
+                                <span className="text-muted-foreground ml-1">
+                                  W{wards.sort((a, b) => a - b).join(", W")}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })() : <span className="text-sm text-muted-foreground">None</span>}
                     </TableCell>
                     <TableCell>
                       <Badge variant={s.is_approved ? "default" : "secondary"}>
