@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star } from "lucide-react";
+import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/admin/ImageUpload";
 import logo from "@/assets/logo.png";
@@ -91,6 +91,53 @@ const SellingPartnerDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState<WalletTxn[]>([]);
+  const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
+  const [addStockProduct, setAddStockProduct] = useState<SellerProduct | null>(null);
+  const [addStockQty, setAddStockQty] = useState("");
+
+  const handleAddStock = async () => {
+    if (!addStockProduct || !user) return;
+    const qty = parseInt(addStockQty);
+    if (isNaN(qty) || qty <= 0) {
+      toast({ title: "Enter a valid quantity", variant: "destructive" });
+      return;
+    }
+    // Update seller_products stock
+    const { error: spError } = await supabase
+      .from("seller_products")
+      .update({ stock: addStockProduct.stock + qty })
+      .eq("id", addStockProduct.id);
+    if (spError) {
+      toast({ title: "Error", description: spError.message, variant: "destructive" });
+      return;
+    }
+    // Also add to godown_stock if area_godown_id is set
+    if (addStockProduct.area_godown_id) {
+      const { data: existing } = await supabase
+        .from("godown_stock")
+        .select("id, quantity")
+        .eq("godown_id", addStockProduct.area_godown_id)
+        .eq("product_id", addStockProduct.id)
+        .order("created_at", { ascending: true })
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        await supabase.from("godown_stock").update({ quantity: existing[0].quantity + qty }).eq("id", existing[0].id);
+      } else {
+        await supabase.from("godown_stock").insert({
+          godown_id: addStockProduct.area_godown_id,
+          product_id: addStockProduct.id,
+          quantity: qty,
+          purchase_price: addStockProduct.purchase_rate || 0,
+        });
+      }
+    }
+    toast({ title: `Added ${qty} units to ${addStockProduct.name}` });
+    setAddStockDialogOpen(false);
+    setAddStockProduct(null);
+    setAddStockQty("");
+    fetchProducts();
+  };
 
   const fetchProducts = async () => {
     if (!user) return;
@@ -327,13 +374,37 @@ const SellingPartnerDashboard = () => {
                         <p className="text-sm text-muted-foreground">₹{p.price} · MRP: ₹{p.mrp} · Stock: {p.stock}</p>
                       </div>
                     </div>
-                    <Badge variant={p.is_approved ? "default" : "secondary"}>
-                      {p.is_approved ? "Approved" : "Pending"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setAddStockProduct(p); setAddStockQty(""); setAddStockDialogOpen(true); }}
+                      >
+                        <PackagePlus className="h-4 w-4 mr-1" /> Add Stock
+                      </Button>
+                      <Badge variant={p.is_approved ? "default" : "secondary"}>
+                        {p.is_approved ? "Approved" : "Pending"}
+                      </Badge>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+
+            {/* Add Stock Dialog */}
+            <Dialog open={addStockDialogOpen} onOpenChange={setAddStockDialogOpen}>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Add Stock - {addStockProduct?.name}</DialogTitle></DialogHeader>
+                <div className="space-y-4 py-2">
+                  <p className="text-sm text-muted-foreground">Current stock: <span className="font-semibold text-foreground">{addStockProduct?.stock}</span></p>
+                  <div>
+                    <Label>Quantity to add</Label>
+                    <Input type="number" min="1" value={addStockQty} onChange={e => setAddStockQty(e.target.value)} placeholder="Enter quantity" />
+                  </div>
+                  <Button onClick={handleAddStock} className="w-full">Add Stock</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* ORDERS TAB */}

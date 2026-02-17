@@ -373,7 +373,6 @@ const GodownsPage = () => {
   };
 
   const handleUpdateTransferStatus = async (transferId: string, status: string) => {
-    // Find the transfer details first
     const transfer = stockTransfers.find(t => t.id === transferId);
     
     await supabase.from("stock_transfers").update({ status }).eq("id", transferId);
@@ -381,38 +380,48 @@ const GodownsPage = () => {
     // When completing a transfer, update godown_stock for destination and deduct from source
     if (status === "completed" && transfer) {
       const productId = typeof transfer.products === "object" && transfer.products ? (transfer.products as any).id : transfer.product_id;
-      const qty = transfer.quantity;
+      let remainingQty = transfer.quantity;
 
-      // Add stock to destination godown
-      const { data: existingDest } = await supabase
+      // Add stock to destination godown - find first existing entry or create new
+      const { data: destEntries } = await supabase
         .from("godown_stock")
         .select("id, quantity")
         .eq("godown_id", transfer.to_godown_id)
         .eq("product_id", productId)
-        .maybeSingle();
+        .order("created_at", { ascending: true })
+        .limit(1);
 
-      if (existingDest) {
-        await supabase.from("godown_stock").update({ quantity: existingDest.quantity + qty }).eq("id", existingDest.id);
+      if (destEntries && destEntries.length > 0) {
+        await supabase.from("godown_stock").update({ quantity: destEntries[0].quantity + transfer.quantity }).eq("id", destEntries[0].id);
       } else {
         await supabase.from("godown_stock").insert({
           godown_id: transfer.to_godown_id,
           product_id: productId,
-          quantity: qty,
+          quantity: transfer.quantity,
           purchase_price: 0,
         });
       }
 
-      // Deduct stock from source godown
-      const { data: existingSrc } = await supabase
+      // Deduct stock from source godown - handle multiple batch entries (FIFO)
+      const { data: srcEntries } = await supabase
         .from("godown_stock")
         .select("id, quantity")
         .eq("godown_id", transfer.from_godown_id)
         .eq("product_id", productId)
-        .maybeSingle();
+        .gt("quantity", 0)
+        .order("created_at", { ascending: true });
 
-      if (existingSrc) {
-        const newQty = Math.max(0, existingSrc.quantity - qty);
-        await supabase.from("godown_stock").update({ quantity: newQty }).eq("id", existingSrc.id);
+      if (srcEntries) {
+        for (const entry of srcEntries) {
+          if (remainingQty <= 0) break;
+          if (entry.quantity >= remainingQty) {
+            await supabase.from("godown_stock").update({ quantity: entry.quantity - remainingQty }).eq("id", entry.id);
+            remainingQty = 0;
+          } else {
+            remainingQty -= entry.quantity;
+            await supabase.from("godown_stock").update({ quantity: 0 }).eq("id", entry.id);
+          }
+        }
       }
 
       fetchGodownStock();
