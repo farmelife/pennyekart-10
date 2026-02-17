@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Clock, CheckCircle, Truck, MapPin, User, Phone, Mail, ChevronRight, ShoppingBag } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Package, Clock, CheckCircle, Truck, MapPin, User, Phone, Mail, ChevronRight, ShoppingBag, Heart, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +40,8 @@ const statusLabels: Record<string, string> = {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "profile";
   const { user, profile, loading: authLoading, signOut } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,7 @@ const Profile = () => {
   const [mobile, setMobile] = useState("");
   const [saving, setSaving] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [activeSection, setActiveSection] = useState(initialTab);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -192,79 +195,140 @@ const Profile = () => {
       </div>
 
       <div className="max-w-2xl mx-auto p-4 space-y-4">
-        {/* Profile Card */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-7 w-7 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-lg">{profile?.full_name || "Customer"}</p>
-                <p className="text-sm text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> {user.email}</p>
-                {profile?.mobile_number && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> {profile.mobile_number}</p>
-                )}
-              </div>
-              {!editMode && <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>Edit</Button>}
-            </div>
+        {/* Section Navigation */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {[
+            { key: "profile", label: "My Profile", icon: User },
+            { key: "orders", label: "Orders", icon: Package },
+            { key: "addresses", label: "Addresses", icon: MapPin },
+            { key: "wishlist", label: "Wishlist", icon: Heart },
+            { key: "notifications", label: "Notifications", icon: Bell },
+          ].map(sec => (
+            <Button
+              key={sec.key}
+              size="sm"
+              variant={activeSection === sec.key ? "default" : "outline"}
+              className="flex items-center gap-1.5 whitespace-nowrap"
+              onClick={() => setActiveSection(sec.key)}
+            >
+              <sec.icon className="h-3.5 w-3.5" />
+              {sec.label}
+            </Button>
+          ))}
+        </div>
 
-            {editMode && (
-              <div className="space-y-3 pt-2 border-t">
-                <div>
-                  <Label>Full Name</Label>
-                  <Input value={fullName} onChange={e => setFullName(e.target.value)} />
+        {/* Profile Section */}
+        {activeSection === "profile" && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-7 w-7 text-primary" />
                 </div>
-                <div>
-                  <Label>Mobile Number</Label>
-                  <Input value={mobile} onChange={e => setMobile(e.target.value)} />
+                <div className="flex-1">
+                  <p className="font-semibold text-lg">{profile?.full_name || "Customer"}</p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> {user.email}</p>
+                  {profile?.mobile_number && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> {profile.mobile_number}</p>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSaveProfile} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
-                  <Button size="sm" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
-                </div>
+                {!editMode && <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>Edit</Button>}
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Orders */}
-        <Tabs defaultValue="active" className="w-full">
-          <TabsList className="w-full">
-            <TabsTrigger value="active" className="flex-1 gap-1">
-              <Truck className="h-4 w-4" /> Active ({activeOrders.length})
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1 gap-1">
-              <ShoppingBag className="h-4 w-4" /> History ({pastOrders.length})
-            </TabsTrigger>
-          </TabsList>
+              {editMode && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div>
+                    <Label>Full Name</Label>
+                    <Input value={fullName} onChange={e => setFullName(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Mobile Number</Label>
+                    <Input value={mobile} onChange={e => setMobile(e.target.value)} />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveProfile} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-          <TabsContent value="active" className="space-y-3 mt-3">
-            {loading ? (
-              <p className="text-center text-muted-foreground py-8">Loading...</p>
-            ) : activeOrders.length === 0 ? (
-              <Card><CardContent className="p-8 text-center text-muted-foreground">
-                <Package className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                <p>No active orders</p>
-              </CardContent></Card>
-            ) : (
-              activeOrders.map(o => <OrderCard key={o.id} order={o} showTracking />)
-            )}
-          </TabsContent>
+        {/* Orders Section */}
+        {activeSection === "orders" && (
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="w-full">
+              <TabsTrigger value="active" className="flex-1 gap-1">
+                <Truck className="h-4 w-4" /> Active ({activeOrders.length})
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex-1 gap-1">
+                <ShoppingBag className="h-4 w-4" /> History ({pastOrders.length})
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="history" className="space-y-3 mt-3">
-            {loading ? (
-              <p className="text-center text-muted-foreground py-8">Loading...</p>
-            ) : pastOrders.length === 0 ? (
-              <Card><CardContent className="p-8 text-center text-muted-foreground">
-                <ShoppingBag className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                <p>No past orders</p>
-              </CardContent></Card>
-            ) : (
-              pastOrders.map(o => <OrderCard key={o.id} order={o} />)
-            )}
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="active" className="space-y-3 mt-3">
+              {loading ? (
+                <p className="text-center text-muted-foreground py-8">Loading...</p>
+              ) : activeOrders.length === 0 ? (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">
+                  <Package className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                  <p>No active orders</p>
+                </CardContent></Card>
+              ) : (
+                activeOrders.map(o => <OrderCard key={o.id} order={o} showTracking />)
+              )}
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-3 mt-3">
+              {loading ? (
+                <p className="text-center text-muted-foreground py-8">Loading...</p>
+              ) : pastOrders.length === 0 ? (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">
+                  <ShoppingBag className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                  <p>No past orders</p>
+                </CardContent></Card>
+              ) : (
+                pastOrders.map(o => <OrderCard key={o.id} order={o} />)
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {/* Addresses Section */}
+        {activeSection === "addresses" && (
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              <MapPin className="h-10 w-10 mx-auto mb-2 opacity-40" />
+              <p className="font-medium">Saved Addresses</p>
+              <p className="text-sm mt-1">No saved addresses yet</p>
+              <Button size="sm" className="mt-4">Add Address</Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Wishlist Section */}
+        {activeSection === "wishlist" && (
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              <Heart className="h-10 w-10 mx-auto mb-2 opacity-40" />
+              <p className="font-medium">Your Wishlist</p>
+              <p className="text-sm mt-1">No items in your wishlist</p>
+              <Button size="sm" className="mt-4" onClick={() => navigate("/")}>Browse Products</Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Notifications Section */}
+        {activeSection === "notifications" && (
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              <Bell className="h-10 w-10 mx-auto mb-2 opacity-40" />
+              <p className="font-medium">Notifications</p>
+              <p className="text-sm mt-1">No notifications yet</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Logout */}
         <Button variant="destructive" className="w-full" onClick={async () => { await signOut(); navigate("/"); }}>

@@ -23,11 +23,11 @@ const SearchBar = () => {
   }, []);
 
   const menuItems = [
-    { icon: User, label: "My Profile", action: () => navigate("/customer/profile") },
-    { icon: Package, label: "Orders", action: () => navigate("/customer/profile") },
-    { icon: MapPin, label: "Saved Addresses", action: () => navigate("/customer/profile") },
-    { icon: Heart, label: "Wishlist", action: () => navigate("/customer/profile") },
-    { icon: Bell, label: "Notifications", action: () => navigate("/customer/profile") },
+    { icon: User, label: "My Profile", action: () => navigate("/customer/profile?tab=profile") },
+    { icon: Package, label: "Orders", action: () => navigate("/customer/profile?tab=orders") },
+    { icon: MapPin, label: "Saved Addresses", action: () => navigate("/customer/profile?tab=addresses") },
+    { icon: Heart, label: "Wishlist", action: () => navigate("/customer/profile?tab=wishlist") },
+    { icon: Bell, label: "Notifications", action: () => navigate("/customer/profile?tab=notifications") },
   ];
 
   return (
