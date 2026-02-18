@@ -57,6 +57,10 @@ const Index = () => {
       navigate("/services");
       return;
     }
+    if (id === "pennycarbs") {
+      navigate("/pennycarbs");
+      return;
+    }
     setPlatform(id);
   };
 
