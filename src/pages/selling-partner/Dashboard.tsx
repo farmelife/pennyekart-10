@@ -532,62 +532,104 @@ const SellingPartnerDashboard = () => {
 
           {/* ORDERS TAB */}
           <TabsContent value="orders">
-            {orders.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No orders yet</p>
-            ) : (
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orders.map(o => {
-                      const myItems = Array.isArray(o.items) ? o.items.filter((item: any) => products.some(p => p.id === item.id)) : [];
-                      return (
-                        <TableRow key={o.id}>
-                          <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}</TableCell>
-                          <TableCell className="text-xs max-w-[150px]">
-                            {myItems.length > 0 ? myItems.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : (Array.isArray(o.items) ? o.items.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : "-")}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={o.status === "delivered" ? "default" : o.status === "seller_confirmation_pending" ? "destructive" : "secondary"}>
-                              {STATUS_LABELS[o.status] || o.status.replace(/_/g, " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>₹{o.total}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            {o.status === "seller_confirmation_pending" && (
-                              <Button size="sm" onClick={async () => {
-                                const { error } = await supabase.from("orders").update({ status: "seller_accepted" }).eq("id", o.id);
-                                if (error) {
-                                  toast({ title: "Error", description: error.message, variant: "destructive" });
-                                } else {
-                                  toast({ title: "Order accepted!" });
-                                  fetchOrders(products);
-                                }
-                              }}>
-                                Accept Order
-                              </Button>
-                            )}
-                            {o.status !== "seller_confirmation_pending" && (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+            {(() => {
+              const pendingOrders = orders.filter(o => o.status === "seller_confirmation_pending");
+              const otherOrders = orders.filter(o => o.status !== "seller_confirmation_pending");
+              return orders.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No orders yet</p>
+              ) : (
+                <div className="space-y-4">
+                  {pendingOrders.length > 0 && (
+                    <Card className="border-destructive">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold text-destructive flex items-center gap-2">
+                          🔔 {pendingOrders.length} Order{pendingOrders.length > 1 ? "s" : ""} Awaiting Your Confirmation
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="rounded-lg border overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Order ID</TableHead>
+                                <TableHead>Items</TableHead>
+                                <TableHead>Total</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {pendingOrders.map(o => {
+                                const myItems = Array.isArray(o.items) ? o.items.filter((item: any) => products.some(p => p.id === item.id)) : [];
+                                return (
+                                  <TableRow key={o.id} className="bg-destructive/5">
+                                    <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}</TableCell>
+                                    <TableCell className="text-xs max-w-[150px]">
+                                      {myItems.length > 0 ? myItems.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : (Array.isArray(o.items) ? o.items.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : "-")}
+                                    </TableCell>
+                                    <TableCell>₹{o.total}</TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                                    <TableCell>
+                                      <Button size="sm" variant="destructive" onClick={async () => {
+                                        const { error } = await supabase.from("orders").update({ status: "seller_accepted" }).eq("id", o.id);
+                                        if (error) {
+                                          toast({ title: "Error", description: error.message, variant: "destructive" });
+                                        } else {
+                                          toast({ title: "Order accepted!" });
+                                          fetchOrders(products);
+                                        }
+                                      }}>
+                                        Accept Order
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {otherOrders.length > 0 && (
+                    <div className="rounded-lg border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Order ID</TableHead>
+                            <TableHead>Items</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Total</TableHead>
+                            <TableHead>Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {otherOrders.map(o => {
+                            const myItems = Array.isArray(o.items) ? o.items.filter((item: any) => products.some(p => p.id === item.id)) : [];
+                            return (
+                              <TableRow key={o.id}>
+                                <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}</TableCell>
+                                <TableCell className="text-xs max-w-[150px]">
+                                  {myItems.length > 0 ? myItems.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : (Array.isArray(o.items) ? o.items.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : "-")}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={o.status === "delivered" ? "default" : "secondary"}>
+                                    {STATUS_LABELS[o.status] || o.status.replace(/_/g, " ")}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>₹{o.total}</TableCell>
+                                <TableCell className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </TabsContent>
 
           {/* ANALYTICS TAB */}

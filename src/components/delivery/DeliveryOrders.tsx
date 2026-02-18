@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, History } from "lucide-react";
+import { Truck, History, Warehouse, Store } from "lucide-react";
 
 interface Order {
   id: string;
@@ -33,6 +33,19 @@ const DeliveryOrders = ({ orders, userId, onRefresh }: Props) => {
   const { toast } = useToast();
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // Separate orders by godown type
+  const isAreaGodownOrder = (o: Order) => 
+    o.seller_id != null || 
+    o.status === "seller_confirmation_pending" || 
+    o.status === "seller_accepted" ||
+    (Array.isArray(o.items) && o.items.some((i: any) => i.source === "seller_product"));
+
+  const microOrders = orders.filter(o => !isAreaGodownOrder(o));
+  const areaOrders = orders.filter(o => isAreaGodownOrder(o));
+
+  const activeMicro = microOrders.filter(o => o.status !== "delivered");
+  const activeArea = areaOrders.filter(o => o.status !== "delivered");
 
   const activeOrders = orders.filter((o) => o.status !== "delivered");
   const deliveredOrders = orders.filter((o) => {
@@ -181,18 +194,35 @@ const DeliveryOrders = ({ orders, userId, onRefresh }: Props) => {
   );
 
   return (
-    <Tabs defaultValue="active">
-      <TabsList>
-        <TabsTrigger value="active"><Truck className="h-4 w-4 mr-1" /> Active ({activeOrders.length})</TabsTrigger>
-        <TabsTrigger value="history"><History className="h-4 w-4 mr-1" /> Delivered History</TabsTrigger>
+    <Tabs defaultValue="micro">
+      <TabsList className="w-full grid grid-cols-3">
+        <TabsTrigger value="micro"><Warehouse className="h-4 w-4 mr-1" /> Micro ({activeMicro.length})</TabsTrigger>
+        <TabsTrigger value="area"><Store className="h-4 w-4 mr-1" /> Area ({activeArea.length})</TabsTrigger>
+        <TabsTrigger value="history"><History className="h-4 w-4 mr-1" /> History</TabsTrigger>
       </TabsList>
-      <TabsContent value="active">
+
+      <TabsContent value="micro">
         <Card>
-          <CardContent className="pt-4">
-            <OrderTable items={activeOrders} showAction />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Micro Godown Orders — You accept first, then pick up & deliver</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <OrderTable items={activeMicro} showAction />
           </CardContent>
         </Card>
       </TabsContent>
+
+      <TabsContent value="area">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Area Godown Orders — Seller must accept first before you can proceed</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <OrderTable items={activeArea} showAction />
+          </CardContent>
+        </Card>
+      </TabsContent>
+
       <TabsContent value="history">
         <Card>
           <CardHeader>
