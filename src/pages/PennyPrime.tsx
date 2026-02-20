@@ -64,7 +64,7 @@ const PennyPrime = () => {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [viewingCoupon, setViewingCoupon] = useState<CouponListing | null>(null);
 
-  const fetchCoupons = async () => {
+  const fetchCoupons = async (currentUser = user) => {
     setLoading(true);
     const { data: rawCoupons, error } = await supabase
       .from("penny_prime_coupons")
@@ -97,12 +97,12 @@ const PennyPrime = () => {
     ]);
 
     let existingCollabs = new Map<string, string>();
-    if (user) {
+    if (currentUser) {
       const couponIds = rawCoupons.map(c => c.id);
       const { data: collabs } = await supabase
         .from("penny_prime_collabs")
         .select("coupon_id, collab_code")
-        .eq("agent_user_id", user.id)
+        .eq("agent_user_id", currentUser.id)
         .in("coupon_id", couponIds);
       (collabs ?? []).forEach(c => existingCollabs.set(c.coupon_id, c.collab_code));
     }
@@ -119,7 +119,7 @@ const PennyPrime = () => {
   };
 
   useEffect(() => {
-    fetchCoupons();
+    fetchCoupons(user);
   }, [user]);
 
   const openProductPopup = (coupon: CouponListing) => {
