@@ -17,12 +17,13 @@ const SearchBar = () => {
   const isLoggedIn = !!user;
 
   const updatePosition = useCallback(() => {
-    const activeBtn = buttonRef.current || mobileButtonRef.current;
+    const activeBtn = mobileButtonRef.current || buttonRef.current;
     if (activeBtn) {
       const rect = activeBtn.getBoundingClientRect();
+      const isMobile = window.innerWidth < 640;
       setDropdownPos({
         top: rect.bottom + 8,
-        right: Math.max(8, window.innerWidth - rect.right),
+        right: isMobile ? 8 : Math.max(8, window.innerWidth - rect.right),
       });
     }
   }, []);
@@ -145,7 +146,8 @@ const SearchBar = () => {
         <div className="flex items-center gap-2 sm:hidden">
           <button
             ref={mobileButtonRef}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               if (isLoggedIn) setDropdownOpen(!dropdownOpen);
               else navigate("/customer/login");
             }}
