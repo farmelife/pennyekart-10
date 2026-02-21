@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Star, ArrowLeft, ChevronDown, ChevronUp, Play, Clock, Building2, MapPin, Phone, Mail } from "lucide-react";
+import { Star, ArrowLeft, ChevronDown, ChevronUp, Play, Clock, Building2, MapPin, Phone, Mail, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductRow from "@/components/ProductRow";
 import { useCart } from "@/hooks/useCart";
@@ -266,7 +266,21 @@ const ProductDetail = () => {
         <button onClick={() => navigate(-1)} className="text-foreground">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="line-clamp-1 text-sm font-semibold text-foreground">{product.name}</h1>
+        <h1 className="line-clamp-1 flex-1 text-sm font-semibold text-foreground">{product.name}</h1>
+        <button
+          onClick={() => {
+            const url = `${window.location.origin}/product/${product.id}${productSource === "seller_product" ? "?source=seller_product" : ""}`;
+            if (navigator.share) {
+              navigator.share({ title: product.name, text: `Check out ${product.name} on Pennyekart!`, url });
+            } else {
+              navigator.clipboard.writeText(url);
+              toast({ title: "Link copied!", description: "Product link copied to clipboard." });
+            }
+          }}
+          className="text-foreground"
+        >
+          <Share2 className="h-5 w-5" />
+        </button>
       </header>
 
       <main>
