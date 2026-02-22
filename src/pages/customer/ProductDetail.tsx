@@ -8,6 +8,17 @@ import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
+interface ProductVariant {
+  id: string;
+  variant_label: string;
+  variant_value: string | null;
+  price: number;
+  mrp: number;
+  stock: number;
+  is_default: boolean;
+  is_active: boolean;
+}
+
 interface ProductData {
   id: string;
   name: string;
@@ -44,6 +55,8 @@ const ProductDetail = () => {
   const { toast } = useToast();
   const { profile } = useAuth();
   const [availableStock, setAvailableStock] = useState<number | null>(null);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
 
   const [productSource, setProductSource] = useState<"product" | "seller_product">("product");
   const [productSellerId, setProductSellerId] = useState<string | undefined>();
@@ -57,13 +70,17 @@ const ProductDetail = () => {
     business_email: string | null;
   } | null>(null);
 
+  // Effective price/mrp based on selected variant
+  const displayPrice = selectedVariant ? selectedVariant.price : product?.price ?? 0;
+  const displayMrp = selectedVariant ? selectedVariant.mrp : product?.mrp ?? 0;
+
   const handleAddToCart = () => {
     if (!product) return;
     addItem({
       id: product.id,
-      name: product.name,
-      price: product.price,
-      mrp: product.mrp,
+      name: selectedVariant ? `${product.name} (${selectedVariant.variant_label})` : product.name,
+      price: displayPrice,
+      mrp: displayMrp,
       image: product.image_url || "",
       source: productSource,
       seller_id: productSellerId,
@@ -75,9 +92,9 @@ const ProductDetail = () => {
     if (!product) return;
     addItem({
       id: product.id,
-      name: product.name,
-      price: product.price,
-      mrp: product.mrp,
+      name: selectedVariant ? `${product.name} (${selectedVariant.variant_label})` : product.name,
+      price: displayPrice,
+      mrp: displayMrp,
       image: product.image_url || "",
       source: productSource,
       seller_id: productSellerId,
@@ -171,6 +188,29 @@ const ProductDetail = () => {
     fetchSellerInfo();
   }, [productSellerId]);
 
+  // Fetch product variants
+  useEffect(() => {
+    const fetchVariants = async () => {
+      if (!id) return;
+      const { data } = await supabase
+        .from("product_variants")
+        .select("id, variant_label, variant_value, price, mrp, stock, is_default, is_active")
+        .eq("product_id", id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+
+      if (data && data.length > 0) {
+        setVariants(data);
+        const defaultVariant = data.find(v => v.is_default) || data[0];
+        setSelectedVariant(defaultVariant);
+      } else {
+        setVariants([]);
+        setSelectedVariant(null);
+      }
+    };
+    fetchVariants();
+  }, [id]);
+
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
@@ -241,14 +281,13 @@ const ProductDetail = () => {
     );
   }
 
-  const effectiveStock = availableStock ?? product.stock;
+  const effectiveStock = selectedVariant ? selectedVariant.stock : (availableStock ?? product.stock);
   const isComingSoon = product.coming_soon === true;
   const isOrderBlocked = isComingSoon || effectiveStock <= 0;
 
-  const discountPercent = product.mrp > product.price
-    ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+  const discountPercent = displayMrp > displayPrice
+    ? Math.round(((displayMrp - displayPrice) / displayMrp) * 100)
     : 0;
-
 
   const similarRowProducts = similarProducts.map(p => ({
     id: p.id,
@@ -287,7 +326,6 @@ const ProductDetail = () => {
         {/* Auto-sliding Image/Video Gallery */}
         <div className="flex flex-col md:flex-row">
           <div className="relative w-full md:w-1/2">
-            {/* Main slide */}
             <div className="aspect-square w-full overflow-hidden bg-muted">
               {slides.length > 0 && slides[activeSlide]?.type === "video" ? (
                 <iframe
@@ -306,13 +344,12 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Dot indicators */}
             {slides.length > 1 && (
               <div className="absolute bottom-16 left-1/2 flex -translate-x-1/2 gap-1.5">
                 {slides.map((_, i) => (
                   <button
                     key={i}
-                  onClick={() => { setActiveSlide(i); if (autoSlideRef.current) clearInterval(autoSlideRef.current); }}
+                    onClick={() => { setActiveSlide(i); if (autoSlideRef.current) clearInterval(autoSlideRef.current); }}
                     className={`h-2 w-2 rounded-full transition-all ${
                       activeSlide === i ? "bg-primary w-4" : "bg-foreground/30"
                     }`}
@@ -321,7 +358,6 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Thumbnails */}
             <div className="flex gap-2 overflow-x-auto p-3">
               {slides.map((slide, i) => (
                 <button
@@ -355,14 +391,51 @@ const ProductDetail = () => {
             </div>
 
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-foreground">₹{product.price}</span>
+              <span className="text-2xl font-bold text-foreground">₹{displayPrice}</span>
               {discountPercent > 0 && (
                 <>
-                  <span className="text-sm text-muted-foreground line-through">₹{product.mrp}</span>
+                  <span className="text-sm text-muted-foreground line-through">₹{displayMrp}</span>
                   <span className="text-sm font-semibold text-destructive">{discountPercent}% OFF</span>
                 </>
               )}
             </div>
+
+            {/* Variant Selector */}
+            {variants.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold text-foreground mb-2">
+                  Select {variants[0]?.variant_value || "Option"}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((variant) => {
+                    const isSelected = selectedVariant?.id === variant.id;
+                    const isOutOfStock = variant.stock <= 0;
+                    return (
+                      <button
+                        key={variant.id}
+                        onClick={() => !isOutOfStock && setSelectedVariant(variant)}
+                        disabled={isOutOfStock}
+                        className={`relative rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : isOutOfStock
+                              ? "border-border bg-muted text-muted-foreground line-through opacity-50 cursor-not-allowed"
+                              : "border-border bg-background text-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        <span>{variant.variant_label}</span>
+                        {variant.price !== product.price && (
+                          <span className="block text-xs mt-0.5">₹{variant.price}</span>
+                        )}
+                        {isOutOfStock && (
+                          <span className="block text-[10px] text-destructive">Out of stock</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {isComingSoon && (
               <div className="mt-2 flex items-center gap-1.5 rounded-md bg-warning/10 px-3 py-1.5 w-fit border border-warning/30">
@@ -383,6 +456,14 @@ const ProductDetail = () => {
                 <div>
                   <h3 className="font-bold text-foreground">All details</h3>
                   <p className="text-xs text-muted-foreground">Features, description and more</p>
+                </div>
+                {showDetails ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+              </button>
+              {showDetails && (
+                <div className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {product.description || "No additional details available."}
+                </div>
+              )}
             </div>
 
             {/* Company Details */}
@@ -419,14 +500,6 @@ const ProductDetail = () => {
                 )}
               </div>
             )}
-                {showDetails ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
-              </button>
-              {showDetails && (
-                <div className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">
-                  {product.description || "No additional details available."}
-                </div>
-              )}
-            </div>
 
             {/* Sticky Add to Cart (desktop) */}
             <div className="mt-6 hidden gap-3 md:flex">
@@ -434,7 +507,7 @@ const ProductDetail = () => {
                 Add to cart
               </Button>
               <Button className="flex-1" disabled={isOrderBlocked} onClick={handleBuyNow}>
-                Buy at ₹{product.price}
+                Buy at ₹{displayPrice}
               </Button>
             </div>
           </div>
@@ -454,7 +527,7 @@ const ProductDetail = () => {
           Add to cart
         </Button>
         <Button className="flex-1" disabled={isOrderBlocked} onClick={handleBuyNow}>
-          Buy at ₹{product.price}
+          Buy at ₹{displayPrice}
         </Button>
       </div>
     </div>
