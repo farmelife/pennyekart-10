@@ -26,7 +26,7 @@ interface PendingOrder {
 
 const PENDING_STATUSES = ["pending", "seller_confirmation_pending"];
 const SETTINGS_KEY = "admin_pending_orders_notify";
-const SUPPRESS_KEY = "admin_pending_orders_suppress_session";
+const SUPPRESS_KEY = "admin_pending_orders_snoozed_ids";
 
 interface Settings {
   enabled: boolean;
@@ -59,9 +59,16 @@ const AdminPendingOrdersNotification = () => {
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>(loadSettings);
-  const [autoPopupSuppressed, setAutoPopupSuppressed] = useState<boolean>(() => {
-    try { return sessionStorage.getItem(SUPPRESS_KEY) === "1"; } catch { return false; }
-  });
+  const snoozedIdsRef = useRef<Set<string>>(
+    (() => {
+      try {
+        const raw = sessionStorage.getItem(SUPPRESS_KEY);
+        return new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
+      } catch {
+        return new Set<string>();
+      }
+    })()
+  );
   const prevCountRef = useRef(0);
   const seenIdsRef = useRef<Set<string>>(new Set());
 
@@ -96,17 +103,23 @@ const AdminPendingOrdersNotification = () => {
     const list = (data as PendingOrder[]) ?? [];
 
     const newOnes = list.filter((o) => !seenIdsRef.current.has(o.id));
-    const hadNew = newOnes.length > 0 && prevCountRef.current > 0;
+    const isFirstRun = prevCountRef.current === 0 && seenIdsRef.current.size === 0;
 
     list.forEach((o) => seenIdsRef.current.add(o.id));
     setOrders(list);
 
-    if (list.length > 0 && (hadNew || prevCountRef.current === 0)) {
+    // Only alert for orders the admin hasn't snoozed yet.
+    const unsnoozedNew = newOnes.filter((o) => !snoozedIdsRef.current.has(o.id));
+    const shouldAlert =
+      unsnoozedNew.length > 0 ||
+      (isFirstRun && list.some((o) => !snoozedIdsRef.current.has(o.id)));
+
+    if (shouldAlert) {
       playBeep();
-      if (settings.autoPopup && !autoPopupSuppressed) setOpen(true);
+      if (settings.autoPopup) setOpen(true);
     }
     prevCountRef.current = list.length;
-  }, [playBeep, settings.autoPopup, autoPopupSuppressed]);
+  }, [playBeep, settings.autoPopup]);
 
   useEffect(() => {
     if (!canSee || !settings.enabled) return;
@@ -285,6 +298,48 @@ const AdminPendingOrdersNotification = () => {
                   {new Date(order.created_at).toLocaleString()}
                 </p>
 
+                {/* Product details */}
+                {Array.isArray(order.items) && order.items.length > 0 && (
+                  <div className="ml-2 rounded-lg border bg-muted/30 p-2 space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Products ({order.items.length})
+                    </p>
+                    {order.items.slice(0, 4).map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.name || "Product"}
+                            loading="lazy"
+                            className="h-8 w-8 rounded border object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded border bg-background flex items-center justify-center shrink-0">
+                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] sm:text-xs font-medium truncate">
+                            {item.name || item.product_name || item.id?.slice(0, 8) || "Item"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Qty {item.quantity ?? 1} · ₹{item.price ?? 0}
+                            {item.variant ? ` · ${item.variant}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-[11px] font-semibold shrink-0">
+                          ₹{((item.price ?? 0) * (item.quantity ?? 1)).toFixed(0)}
+                        </span>
+                      </div>
+                    ))}
+                    {order.items.length > 4 && (
+                      <p className="text-[10px] text-muted-foreground">
+                        +{order.items.length - 4} more item{order.items.length - 4 > 1 ? "s" : ""}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Action button */}
                 <div className="flex gap-2 pt-1 pl-2">
                   <Button
@@ -310,8 +365,13 @@ const AdminPendingOrdersNotification = () => {
                 variant="outline"
                 className="flex-1 h-11 border-2 border-[#d4af37] text-[#0a1f44] hover:bg-[#d4af37]/10 hover:text-[#0a1f44] hover:border-[#b8860b] font-semibold shadow-sm"
                 onClick={() => {
-                  try { sessionStorage.setItem(SUPPRESS_KEY, "1"); } catch {}
-                  setAutoPopupSuppressed(true);
+                  orders.forEach((o) => snoozedIdsRef.current.add(o.id));
+                  try {
+                    sessionStorage.setItem(
+                      SUPPRESS_KEY,
+                      JSON.stringify([...snoozedIdsRef.current])
+                    );
+                  } catch {}
                   setOpen(false);
                 }}
               >
