@@ -1,47 +1,42 @@
-# Combo billing fix in cart
+# App Interface Display Settings
 
-## Problem
-When a combo is added to the cart, each included product is inserted as a separate cart line at its own `unit_price`. The cart then bills the **sum of individual unit prices**, which can differ from the combo's discounted `combo_price`. Customers can also change quantity or remove individual combo items, breaking the bundle.
+Add a new "Interface & Display" area to `/admin/settings` where admins set the default look and feel of the customer app. Customers can still override theme and lite mode from their own device; everything else follows the admin defaults.
 
-## Goal
-1. Combo always bills at `combo_price` (one fixed amount), regardless of the unit prices of its items.
-2. Customer cannot edit quantity or remove a single product inside a combo. They can only remove the whole combo.
+## What the admin gets
 
-## Approach (frontend-only)
+A new tabbed/grouped panel on the App Settings page with four cards:
 
-### 1. Extend `CartItem` (src/hooks/useCart.tsx)
-Add optional fields to each cart item:
-- `combo_id?: string` — combo definition id
-- `combo_instance_id?: string` — unique id per "added combo" (so the same combo added twice stays as two separate bundles)
-- `combo_name?: string`
-- `combo_locked?: boolean` — when true, quantity controls and individual remove are disabled
+**1. Homepage sections**
+On/off switches for each homepage block: Penny Carbs food strip, cart reminder, flash sale banner, category bar, sort/filter bar, banner carousel, scratch & win widget, grocery categories, combo offers, product video row. Sections already hide themselves when empty; these switches let admins hide them even when data exists.
 
-Add a helper `removeCombo(combo_instance_id)` that filters out all items sharing that id.
+**2. Layout density & grid**
+- Products per row on mobile (2-3) and desktop (3-6)
+- Card size: compact / standard / large
+- Spacing: compact / comfortable
 
-### 2. Update `ComboOffersSection.addComboToCart` (src/components/customer/ComboOffersSection.tsx)
-When adding a combo:
-- Generate one `combo_instance_id` (e.g. `crypto.randomUUID()`).
-- Distribute `combo.combo_price` across the combo items proportionally to `unit_price * quantity`, so the **sum of `price * quantity` across the line items exactly equals `combo_price`** (rounded to 2 decimals, with last item absorbing the rounding remainder).
-- Push each item with `combo_id`, `combo_instance_id`, `combo_name`, `combo_locked: true`, and `mrp` kept as the original product mrp so MRP savings still display correctly.
-- To allow the same combo to coexist with the same product added separately, use a composite cart `id` of `${product_id}__${combo_instance_id}` for combo lines (regular product lines keep plain `id`). This sidesteps the existing "merge by id" logic in `addItem`.
+**3. Theme & branding**
+- Default theme: light / dark / follow device
+- Accent color preset (mapped to existing design tokens, no hardcoded hex in components)
+- App display name and logo upload
 
-### 3. Update `Cart.tsx` rendering
-- Group items by `combo_instance_id` when present; render a single bordered card per combo with header `Combo: <combo_name>` and a single **Remove Combo** button (calls `removeCombo`).
-- Inside the group, list each included product (image, name, qty) but hide the +/- buttons, the individual Remove button, and the per-item price/discount strip.
-- Show the combo total as one line: `Combo price: ₹<combo_price>` (computed as the sum of the line `price * quantity` within the group, which equals `combo_price` by construction).
-- Non-combo items render exactly as today.
+**4. Lite mode & performance**
+- Default lite mode on/off (customer can still toggle)
+- Reduce animations
+- Image quality: high / balanced / data saver
+- Lazy-load images on/off
 
-### 4. Stock & checkout
-No business-logic changes:
-- Stock checks in `handlePlaceOrder` already key off `item.id` and `item.source`. Because combo lines use `${product_id}__${combo_instance_id}`, add a small shim: when checking stock and when mapping `mapOrderItems`, use `item.combo_id ? <real product_id from item> : item.id`. Store the real product id on the cart line as `product_id` so we don't have to parse the composite id.
-- `totalPrice` (sum of `price * quantity`) automatically equals combo_price for that bundle, so subtotal, discounts, delivery, wallet, and order insertion all stay correct without further math changes.
-- `mapOrderItems` will include `combo_id` and `combo_name` in the stored `items` JSON so admin/order views can show the combo grouping later.
+Each card saves independently with a toast, plus a "Reset to defaults" action.
 
-## Files touched
-- `src/hooks/useCart.tsx` — extend type, add `removeCombo`, accept composite ids.
-- `src/components/customer/ComboOffersSection.tsx` — proportional price distribution + combo metadata when adding to cart.
-- `src/pages/customer/Cart.tsx` — group-render combo items, lock controls, single remove button; pass `product_id` (not composite id) into stock checks and order items.
+## Customer side behaviour
 
-## Out of scope
-- No DB migrations. No admin/order-page changes beyond the extra fields naturally appearing in `orders.items` JSON.
-- Existing combos already in users' carts (added before this change) will continue to behave as separate items; only newly added combos get the new behavior.
+The customer app reads these values once on load and applies them as defaults. If a customer has previously chosen a theme or lite mode on their device, their local choice wins. Layout, section visibility and performance options always follow the admin values.
+
+## Technical notes
+
+- Values persist in the existing `app_settings` table as one JSON row under key `ui_display_settings` (single row, no migration to table structure needed) — avoids adding ~15 individual keys.
+- New `src/hooks/useDisplaySettings.tsx` provider: fetches the row via react-query, exposes typed settings with hardcoded fallbacks, and is mounted in `src/App.tsx` above the router.
+- `useLiteMode` gains an "admin default" input: it keeps using `pennyekart_lite_mode` in localStorage when present, otherwise falls back to the admin default. Same pattern for theme.
+- New `src/components/admin/DisplaySettingsPanel.tsx` (split into small sub-cards) rendered inside `src/pages/admin/AppSettingsPage.tsx`; existing Penny Carbs and app-download cards stay untouched.
+- `src/pages/Index.tsx` wraps each optional block in a visibility check from the hook; `ProductRow` and grid components read density/columns from the hook instead of fixed classes.
+- Accent color applied by setting CSS custom properties on `:root` from the token presets defined in `src/index.css` — no inline color utilities added to components.
+- Logo upload reuses the existing `ImageUpload` admin component and Supabase storage.
