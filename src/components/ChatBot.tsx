@@ -169,27 +169,88 @@ const ChatBot = () => {
     void send(cmd.prompt);
   };
 
-  const toggleListening = () => {
+  const toggleListening = async () => {
     if (isListening) {
-      recognitionRef.current?.stop();
+      try { recognitionRef.current?.stop(); } catch {}
       setIsListening(false);
       return;
     }
+
     const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    const recognition = new SR();
-    recognition.lang = "en-IN";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      setInput(transcript);
+    if (!SR) {
+      toast({
+        title: "Voice input unavailable",
+        description: "Your browser doesn't support speech recognition. Try Chrome.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Explicitly request mic permission first — without this the recognizer
+    // often fails silently with "not-allowed" inside embedded/preview frames.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+    } catch {
+      toast({
+        title: "Microphone blocked",
+        description: "Allow microphone access in your browser settings to use voice input.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const recognition = new SR();
+      recognition.lang = "en-IN";
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      let finalText = "";
+      recognition.onresult = (e: any) => {
+        let interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const res = e.results[i];
+          if (res.isFinal) finalText += res[0].transcript;
+          else interim += res[0].transcript;
+        }
+        setInput((finalText + interim).trim());
+      };
+      recognition.onerror = (e: any) => {
+        setIsListening(false);
+        const code = e?.error;
+        if (code === "aborted" || code === "no-speech") return;
+        toast({
+          title: "Voice input error",
+          description:
+            code === "not-allowed" || code === "service-not-allowed"
+              ? "Microphone permission denied."
+              : code === "network"
+              ? "Speech service unreachable. Check your connection."
+              : `Could not capture audio (${code ?? "unknown"}).`,
+          variant: "destructive",
+        });
+      };
+      recognition.onend = () => {
+        setIsListening(false);
+        const text = finalText.trim();
+        if (text) {
+          setInput("");
+          void send(text);
+        }
+      };
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsListening(true);
+    } catch (err: any) {
       setIsListening(false);
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+      toast({
+        title: "Voice input failed",
+        description: err?.message ?? "Could not start speech recognition.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!enabled) return null;
