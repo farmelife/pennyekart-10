@@ -19,6 +19,7 @@ import SortFilterBar, { SortOption } from "@/components/SortFilterBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useAreaProducts } from "@/hooks/useAreaProducts";
 import { useSectionProducts } from "@/hooks/useSectionProducts";
+import { useDisplaySettings } from "@/hooks/useDisplaySettings";
 import { supabase } from "@/integrations/supabase/client";
 
 const sectionOrder = ["featured", "sponsors", "most_ordered", "new_arrivals", "low_budget"];
@@ -32,6 +33,7 @@ const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth();
+  const { isSectionVisible } = useDisplaySettings();
 
   // Check for signup reward popup
   useEffect(() => {
@@ -265,15 +267,19 @@ const Index = () => {
       </header>
 
       <main className="relative z-0 space-y-2">
-        <CartReminderBanner />
-        <CarbsBannerStrip />
-        <FlashSaleBanner />
-        <CategoryBar onCategoryClick={handleCategoryClick} selectedCategory={selectedCategory} />
-        <SortFilterBar selected={sortBy} onChange={setSortBy} />
-        <BannerCarousel />
-        <ScratchCardWidget />
-        <GroceryCategories onCategoryClick={handleCategoryClick} selectedCategory={selectedCategory} />
-        <ComboOffersSection />
+        {isSectionVisible("cart_reminder") && <CartReminderBanner />}
+        {isSectionVisible("carbs_strip") && <CarbsBannerStrip />}
+        {isSectionVisible("flash_sale") && <FlashSaleBanner />}
+        {isSectionVisible("category_bar") && (
+          <CategoryBar onCategoryClick={handleCategoryClick} selectedCategory={selectedCategory} />
+        )}
+        {isSectionVisible("sort_bar") && <SortFilterBar selected={sortBy} onChange={setSortBy} />}
+        {isSectionVisible("banner_carousel") && <BannerCarousel />}
+        {isSectionVisible("scratch_widget") && <ScratchCardWidget />}
+        {isSectionVisible("grocery_categories") && (
+          <GroceryCategories onCategoryClick={handleCategoryClick} selectedCategory={selectedCategory} />
+        )}
+        {isSectionVisible("combo_offers") && <ComboOffersSection />}
         {renderSectionProducts()}
       </main>
 
