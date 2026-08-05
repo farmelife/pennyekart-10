@@ -298,6 +298,48 @@ const AdminPendingOrdersNotification = () => {
                   {new Date(order.created_at).toLocaleString()}
                 </p>
 
+                {/* Product details */}
+                {Array.isArray(order.items) && order.items.length > 0 && (
+                  <div className="ml-2 rounded-lg border bg-muted/30 p-2 space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Products ({order.items.length})
+                    </p>
+                    {order.items.slice(0, 4).map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.name || "Product"}
+                            loading="lazy"
+                            className="h-8 w-8 rounded border object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded border bg-background flex items-center justify-center shrink-0">
+                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] sm:text-xs font-medium truncate">
+                            {item.name || item.product_name || item.id?.slice(0, 8) || "Item"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Qty {item.quantity ?? 1} · ₹{item.price ?? 0}
+                            {item.variant ? ` · ${item.variant}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-[11px] font-semibold shrink-0">
+                          ₹{((item.price ?? 0) * (item.quantity ?? 1)).toFixed(0)}
+                        </span>
+                      </div>
+                    ))}
+                    {order.items.length > 4 && (
+                      <p className="text-[10px] text-muted-foreground">
+                        +{order.items.length - 4} more item{order.items.length - 4 > 1 ? "s" : ""}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Action button */}
                 <div className="flex gap-2 pt-1 pl-2">
                   <Button
