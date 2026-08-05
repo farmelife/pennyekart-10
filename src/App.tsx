@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { LiteModeProvider, useLiteMode } from "@/hooks/useLiteMode";
+import { DisplaySettingsProvider } from "@/hooks/useDisplaySettings";
 import Index from "./pages/Index";
 import LiteIndex from "./pages/LiteIndex";
 import NotFound from "./pages/NotFound";
@@ -147,6 +148,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <DisplaySettingsProvider>
         <LiteModeProvider>
           <Toaster />
           <Sonner />
@@ -161,6 +163,7 @@ const App = () => {
             </AuthProvider>
           </BrowserRouter>
         </LiteModeProvider>
+        </DisplaySettingsProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
