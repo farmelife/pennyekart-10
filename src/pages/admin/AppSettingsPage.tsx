@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, ExternalLink, Upload, Smartphone, X, Apple } from "lucide-react";
 import carbsLogo from "@/assets/carbs-logo.png";
+import DisplaySettingsPanel from "@/components/admin/DisplaySettingsPanel";
 
 const AppSettingsPage = () => {
   const { toast } = useToast();
@@ -129,6 +130,9 @@ const AppSettingsPage = () => {
       <h1 className="mb-6 text-2xl font-bold">App Settings</h1>
 
       <div className="max-w-2xl space-y-6">
+        {/* Interface & Display */}
+        <DisplaySettingsPanel />
+
         {/* Penny Carbs Config */}
         <Card>
           <CardHeader>

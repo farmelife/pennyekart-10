@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
+import { useDisplaySettings } from "@/hooks/useDisplaySettings";
 
 interface LiteModeContextType {
   liteMode: boolean;
@@ -13,16 +14,21 @@ const LiteModeContext = createContext<LiteModeContextType>({
 });
 
 export const LiteModeProvider = ({ children }: { children: ReactNode }) => {
-  const [liteMode, setLiteModeState] = useState(() => {
+  const { settings } = useDisplaySettings();
+  const [userChoice, setUserChoice] = useState<boolean | null>(() => {
     try {
-      return localStorage.getItem("pennyekart_lite_mode") === "true";
+      const stored = localStorage.getItem("pennyekart_lite_mode");
+      return stored === null ? null : stored === "true";
     } catch {
-      return false;
+      return null;
     }
   });
 
+  // Local choice wins; otherwise follow the admin default
+  const liteMode = userChoice ?? settings.defaultLiteMode;
+
   const setLiteMode = (v: boolean) => {
-    setLiteModeState(v);
+    setUserChoice(v);
     try {
       localStorage.setItem("pennyekart_lite_mode", String(v));
     } catch {}

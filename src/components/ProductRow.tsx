@@ -1,5 +1,6 @@
 import { Star, TrendingUp, Sparkles, Wallet, Megaphone, Clock, Coins } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useGridClasses } from "@/hooks/useDisplaySettings";
 
 export interface Product {
   id?: string;
@@ -31,6 +32,7 @@ const ProductRow = ({ title, products, linkPrefix = "/product/", sectionKey }: P
   const navigate = useNavigate();
   const meta = sectionKey ? sectionMeta[sectionKey] : null;
   const Icon = meta?.icon;
+  const { cardWidth, gap, sectionPadding, imgLoading } = useGridClasses();
 
   // Sort: available first, coming_soon last
   const sortedProducts = [...products].sort((a, b) => {
@@ -40,7 +42,7 @@ const ProductRow = ({ title, products, linkPrefix = "/product/", sectionKey }: P
   });
 
   return (
-    <section className={`py-4 ${meta ? `bg-gradient-to-r ${meta.gradient}` : "bg-card"}`}>
+    <section className={`${sectionPadding} ${meta ? `bg-gradient-to-r ${meta.gradient}` : "bg-card"}`}>
       <div className="container">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -59,17 +61,18 @@ const ProductRow = ({ title, products, linkPrefix = "/product/", sectionKey }: P
           </button>
         </div>
 
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+        <div className={`flex ${gap} overflow-x-auto scrollbar-hide pb-2`}>
           {sortedProducts.map((p, i) => (
             <div
               key={p.id || i}
               onClick={() => p.id && !p.coming_soon && navigate(`${linkPrefix}${p.id}`)}
-              className={`group flex w-36 shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-background transition-all hover:shadow-lg md:w-44 ${p.coming_soon ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
+              className={`group flex ${cardWidth} shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-background transition-all hover:shadow-lg ${p.coming_soon ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
             >
               <div className="relative aspect-square overflow-hidden bg-muted">
                 <img
                   src={p.image}
                   alt={p.name}
+                  loading={imgLoading}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
                 {p.coming_soon ? (
