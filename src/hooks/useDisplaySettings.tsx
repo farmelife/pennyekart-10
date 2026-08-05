@@ -175,8 +175,14 @@ export const useGridClasses = () => {
         : "w-36 md:w-44";
   const gap = settings.spacing === "compact" ? "gap-1.5" : "gap-3";
   const sectionPadding = settings.spacing === "compact" ? "py-2" : "py-4";
-  const mobileCols =
-    settings.mobileColumns === 3 ? "grid-cols-3" : "grid-cols-2";
-  const desktopCols = `md:grid-cols-${Math.min(Math.max(settings.desktopColumns, 3), 6)}`;
-  return { cardWidth, gap, sectionPadding, mobileCols, desktopCols };
+  const mobileCols = settings.mobileColumns === 3 ? "grid-cols-3" : "grid-cols-2";
+  const desktopColsMap: Record<number, string> = {
+    3: "md:grid-cols-3",
+    4: "md:grid-cols-4",
+    5: "md:grid-cols-5",
+    6: "md:grid-cols-6",
+  };
+  const desktopCols = desktopColsMap[settings.desktopColumns] ?? "md:grid-cols-5";
+  const imgLoading: "lazy" | "eager" = settings.lazyLoadImages ? "lazy" : "eager";
+  return { cardWidth, gap, sectionPadding, mobileCols, desktopCols, imgLoading };
 };
