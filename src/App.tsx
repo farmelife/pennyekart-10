@@ -55,7 +55,7 @@ import DeliveryStaffDashboard from "./pages/delivery-staff/Dashboard";
 import SellingPartnerSignup from "./pages/selling-partner/Signup";
 import SellingPartnerLogin from "./pages/selling-partner/Login";
 import SellingPartnerForgotPassword from "./pages/selling-partner/ForgotPasswordPage";
-import SellingPartnerDashboard from "./pages/selling-partner/Dashboard";
+import SellingPartnerDashboardRouter from "./pages/selling-partner/DashboardRouter";
 import UtilityPartnerSignup from "./pages/utility-partner/Signup";
 import UtilityPartnerLogin from "./pages/utility-partner/Login";
 import UtilityPartnerDashboard from "./pages/utility-partner/Dashboard";
@@ -139,7 +139,7 @@ const AppRoutes = () => {
       <Route path="/selling-partner/forgot-password" element={<SellingPartnerForgotPassword />} />
       <Route path="/selling-partner/dashboard" element={
         <ProtectedPartnerRoute userType="selling_partner" loginPath="/selling-partner/login">
-          <SellingPartnerDashboard />
+          <SellingPartnerDashboardRouter />
         </ProtectedPartnerRoute>
       } />
 

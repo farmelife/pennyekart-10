@@ -17,6 +17,7 @@ interface Profile {
   local_body_id: string | null;
   ward_number: number | null;
   customer_id: string | null;
+  seller_type?: string | null;
 }
 
 interface AuthContextType {
