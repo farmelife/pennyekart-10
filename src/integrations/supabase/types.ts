@@ -1449,6 +1449,7 @@ export type Database = {
           referral_code: string | null
           referred_by: string | null
           role_id: string | null
+          seller_type: string | null
           updated_at: string
           user_id: string
           user_type: string
@@ -1485,6 +1486,7 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           role_id?: string | null
+          seller_type?: string | null
           updated_at?: string
           user_id: string
           user_type?: string
@@ -1521,6 +1523,7 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           role_id?: string | null
+          seller_type?: string | null
           updated_at?: string
           user_id?: string
           user_type?: string
@@ -2099,6 +2102,176 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      utility_service_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      utility_service_requests: {
+        Row: {
+          address: string | null
+          admin_notes: string | null
+          contact_name: string
+          contact_phone: string
+          created_at: string
+          customer_user_id: string | null
+          id: string
+          notes: string | null
+          preferred_date: string | null
+          quoted_amount: number | null
+          service_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admin_notes?: string | null
+          contact_name: string
+          contact_phone: string
+          created_at?: string
+          customer_user_id?: string | null
+          id?: string
+          notes?: string | null
+          preferred_date?: string | null
+          quoted_amount?: number | null
+          service_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admin_notes?: string | null
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string
+          customer_user_id?: string | null
+          id?: string
+          notes?: string | null
+          preferred_date?: string | null
+          quoted_amount?: number | null
+          service_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_service_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "utility_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      utility_services: {
+        Row: {
+          category_id: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          coverage_area: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_approved: boolean
+          local_body_id: string | null
+          name: string
+          price: number
+          price_unit: string
+          provider_user_id: string | null
+          sort_order: number
+          updated_at: string
+          ward_number: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          coverage_area?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_approved?: boolean
+          local_body_id?: string | null
+          name: string
+          price?: number
+          price_unit?: string
+          provider_user_id?: string | null
+          sort_order?: number
+          updated_at?: string
+          ward_number?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          coverage_area?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_approved?: boolean
+          local_body_id?: string | null
+          name?: string
+          price?: number
+          price_unit?: string
+          provider_user_id?: string | null
+          sort_order?: number
+          updated_at?: string
+          ward_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_services_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "utility_service_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_services_local_body_id_fkey"
+            columns: ["local_body_id"]
+            isOneToOne: false
+            referencedRelation: "locations_local_bodies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
