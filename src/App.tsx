@@ -24,6 +24,7 @@ import OrdersPage from "./pages/admin/OrdersPage";
 import BannersPage from "./pages/admin/BannersPage";
 import CategoriesPage from "./pages/admin/CategoriesPage";
 import ServicesPage from "./pages/admin/ServicesPage";
+import UtilityServicesPage from "./pages/admin/UtilityServicesPage";
 import LocationsPage from "./pages/admin/LocationsPage";
 import GodownsPage from "./pages/admin/GodownsPage";
 import PurchasePage from "./pages/admin/PurchasePage";
@@ -31,6 +32,7 @@ import DeliveryManagementPage from "./pages/admin/DeliveryManagementPage";
 import SellingPartnersPage from "./pages/admin/SellingPartnersPage";
 import OffersPage from "./pages/admin/OffersPage";
 import PennyServices from "./pages/PennyServices";
+import UtilityServicesPublic from "./pages/UtilityServices";
 import ServiceDetail from "./pages/ServiceDetail";
 import PennyCarbs from "./pages/PennyCarbs";
 import AppSettingsPage from "./pages/admin/AppSettingsPage";
@@ -54,6 +56,9 @@ import SellingPartnerSignup from "./pages/selling-partner/Signup";
 import SellingPartnerLogin from "./pages/selling-partner/Login";
 import SellingPartnerForgotPassword from "./pages/selling-partner/ForgotPasswordPage";
 import SellingPartnerDashboard from "./pages/selling-partner/Dashboard";
+import UtilityPartnerSignup from "./pages/utility-partner/Signup";
+import UtilityPartnerLogin from "./pages/utility-partner/Login";
+import UtilityPartnerDashboard from "./pages/utility-partner/Dashboard";
 import CustomerSignup from "./pages/customer/Signup";
 import CustomerLogin from "./pages/customer/Login";
 import ProductDetail from "./pages/customer/ProductDetail";
@@ -83,6 +88,7 @@ const AppRoutes = () => {
       <Route path="/admin/banners" element={<ProtectedRoute requirePermission="read_banners"><BannersPage /></ProtectedRoute>} />
       <Route path="/admin/categories" element={<ProtectedRoute requirePermission="read_categories"><CategoriesPage /></ProtectedRoute>} />
       <Route path="/admin/services" element={<ProtectedRoute requirePermission="read_services"><ServicesPage /></ProtectedRoute>} />
+      <Route path="/admin/utility-services" element={<ProtectedRoute requirePermission="read_services"><UtilityServicesPage /></ProtectedRoute>} />
       <Route path="/admin/locations" element={<ProtectedRoute requirePermission="read_locations"><LocationsPage /></ProtectedRoute>} />
       <Route path="/admin/godowns" element={<ProtectedRoute requirePermission="read_godowns"><GodownsPage /></ProtectedRoute>} />
       <Route path="/admin/purchase" element={<ProtectedRoute requirePermission="create_stock"><PurchasePage /></ProtectedRoute>} />
@@ -91,6 +97,7 @@ const AppRoutes = () => {
       <Route path="/admin/offers" element={<ProtectedRoute requirePermission="read_products"><OffersPage /></ProtectedRoute>} />
       <Route path="/services" element={<PennyServices />} />
       <Route path="/services/:id" element={<ServiceDetail />} />
+      <Route path="/utility-services" element={<UtilityServicesPublic />} />
       <Route path="/pennycarbs" element={<PennyCarbs />} />
       <Route path="/admin/stock-control" element={<ProtectedRoute requirePermission="read_stock"><StockControlPage /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requirePermission="read_products"><AppSettingsPage /></ProtectedRoute>} />
@@ -133,6 +140,15 @@ const AppRoutes = () => {
       <Route path="/selling-partner/dashboard" element={
         <ProtectedPartnerRoute userType="selling_partner" loginPath="/selling-partner/login">
           <SellingPartnerDashboard />
+        </ProtectedPartnerRoute>
+      } />
+
+      {/* Utility Service Partner */}
+      <Route path="/utility-partner/signup" element={<UtilityPartnerSignup />} />
+      <Route path="/utility-partner/login" element={<UtilityPartnerLogin />} />
+      <Route path="/utility-partner/dashboard" element={
+        <ProtectedPartnerRoute userType="selling_partner" loginPath="/utility-partner/login">
+          <UtilityPartnerDashboard />
         </ProtectedPartnerRoute>
       } />
 

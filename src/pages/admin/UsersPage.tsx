@@ -36,6 +36,7 @@ interface Profile {
   created_at?: string;
   last_login_at?: string | null;
   customer_id?: string | null;
+  seller_type?: string | null;
 }
 
 interface Role {
@@ -200,6 +201,12 @@ const UsersPage = () => {
     else { toast({ title: !current ? "User approved" : "User unapproved" }); fetchData(); }
   };
 
+  const updateSellerType = async (userId: string, sellerType: string) => {
+    const { error } = await supabase.from("profiles").update({ seller_type: sellerType }).eq("user_id", userId);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else { toast({ title: `Marked as ${sellerType === "utility" ? "utility seller" : "normal seller"}` }); fetchData(); }
+  };
+
   const openEditDialog = (user: Profile) => {
     setEditUser(user);
     setEditForm({
@@ -277,7 +284,7 @@ const UsersPage = () => {
     }
   };
 
-  const otherColSpan = isSuperAdmin ? 7 : 6;
+  const otherColSpan = isSuperAdmin ? 8 : 7;
 
   return (
     <AdminLayout>
@@ -331,6 +338,7 @@ const UsersPage = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email / Mobile</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Seller Type</TableHead>
                   <TableHead>Approved</TableHead>
                   <TableHead>Role</TableHead>
                   {isSuperAdmin && <TableHead>Super Admin</TableHead>}
@@ -352,6 +360,19 @@ const UsersPage = () => {
                       <Badge variant={getTypeBadgeVariant(u.user_type)}>
                         {USER_TYPE_LABELS[u.user_type] ?? u.user_type}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {u.user_type === "selling_partner" ? (
+                        <Select value={u.seller_type ?? "normal"} onValueChange={(v) => updateSellerType(u.user_id, v)}>
+                          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="normal">Normal Seller</SelectItem>
+                            <SelectItem value="utility">Utility Seller</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Switch checked={u.is_approved} onCheckedChange={() => toggleApproval(u.user_id, u.is_approved)} />
