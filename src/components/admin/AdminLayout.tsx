@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   LayoutDashboard, Users, ShieldCheck, Package, ShoppingCart,
-  Image, LogOut, ChevronLeft, Settings, Grid3X3, Wrench, MapPin, Warehouse, ClipboardList, Truck, Store, Star, SlidersHorizontal, BarChart3, Wallet, Handshake, Menu, X, Percent, Bot, Bell, Gift,
+  Image, LogOut, ChevronLeft, Settings, Grid3X3, Wrench, Hammer, MapPin, Warehouse, ClipboardList, Truck, Store, Star, SlidersHorizontal, BarChart3, Wallet, Handshake, Menu, X, Percent, Bot, Bell, Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -19,6 +19,7 @@ const navItems = [
   { label: "Orders", icon: ShoppingCart, path: "/admin/orders", perm: "read_orders" },
   { label: "Banners", icon: Image, path: "/admin/banners", perm: "read_banners" },
   { label: "Services", icon: Wrench, path: "/admin/services", perm: "read_services" },
+  { label: "Utility Services", icon: Hammer, path: "/admin/utility-services", perm: "read_services" },
   { label: "Locations", icon: MapPin, path: "/admin/locations", perm: "read_locations" },
   { label: "Godowns", icon: Warehouse, path: "/admin/godowns", perm: "read_godowns" },
   { label: "Purchase", icon: ClipboardList, path: "/admin/purchase", perm: "create_stock" },
