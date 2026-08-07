@@ -30,11 +30,13 @@ interface Props {
   userType: "delivery_staff" | "selling_partner";
   title: string;
   description: string;
+  sellerType?: "normal" | "utility";
+  loginPath?: string;
 }
 
 const nativeSelectClass = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
-const PartnerSignup = ({ userType, title, description }: Props) => {
+const PartnerSignup = ({ userType, title, description, sellerType, loginPath: loginPathProp }: Props) => {
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
   const [dob, setDob] = useState("");
@@ -83,7 +85,7 @@ const PartnerSignup = ({ userType, title, description }: Props) => {
     setLoading(true);
 
     const email = `${mobile}@pennyekart.local`;
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -101,14 +103,17 @@ const PartnerSignup = ({ userType, title, description }: Props) => {
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
+      if (sellerType && signUpData.user) {
+        await supabase.from("profiles").update({ seller_type: sellerType }).eq("user_id", signUpData.user.id);
+      }
       await supabase.auth.signOut();
       toast({ title: "Registration successful!", description: "Your account is pending admin approval." });
-      navigate(userType === "delivery_staff" ? "/delivery-staff/login" : "/selling-partner/login");
+      navigate(loginPathProp ?? (userType === "delivery_staff" ? "/delivery-staff/login" : "/selling-partner/login"));
     }
     setLoading(false);
   };
 
-  const loginPath = userType === "delivery_staff" ? "/delivery-staff/login" : "/selling-partner/login";
+  const loginPath = loginPathProp ?? (userType === "delivery_staff" ? "/delivery-staff/login" : "/selling-partner/login");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
