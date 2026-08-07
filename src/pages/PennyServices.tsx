@@ -51,6 +51,14 @@ const PennyServices = () => {
             <Wrench className="h-5 w-5 text-primary-foreground" />
             <h1 className="text-lg font-bold text-primary-foreground">Penny Services</h1>
           </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="ml-auto"
+            onClick={() => navigate("/utility-services")}
+          >
+            Utility Services
+          </Button>
         </div>
       </header>
 
