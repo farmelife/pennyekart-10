@@ -139,7 +139,7 @@ const AppRoutes = () => {
       <Route path="/selling-partner/forgot-password" element={<SellingPartnerForgotPassword />} />
       <Route path="/selling-partner/dashboard" element={
         <ProtectedPartnerRoute userType="selling_partner" loginPath="/selling-partner/login">
-          <SellingPartnerDashboard />
+          <SellingPartnerDashboardRouter />
         </ProtectedPartnerRoute>
       } />
 
