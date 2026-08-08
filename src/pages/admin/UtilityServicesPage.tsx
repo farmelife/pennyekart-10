@@ -373,7 +373,13 @@ const UtilityServicesPage = () => {
           </div>
           <p className="mt-2 text-xs text-muted-foreground">Latest status: {requests[0] ? statusLabel(requests[0].status) : "—"}</p>
         </TabsContent>
+
+        {/* SELLER REGISTRATIONS */}
+        <TabsContent value="sellers" className="mt-4">
+          <UtilitySellerRegistrations />
+        </TabsContent>
       </Tabs>
+
     </AdminLayout>
   );
 };
