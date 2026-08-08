@@ -8,6 +8,9 @@ const FloatingUtilityButton = () => {
   const navigate = useNavigate();
   const [images, setImages] = useState<{ url: string; name: string }[]>([]);
   const [idx, setIdx] = useState(0);
+  const [isVisible, setIsVisible] = useState(() => {
+    return localStorage.getItem("hideFloatingUtility") !== "true";
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -31,7 +34,16 @@ const FloatingUtilityButton = () => {
     return () => clearInterval(t);
   }, [images.length]);
 
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    localStorage.setItem("hideFloatingUtility", "true");
+    setIsVisible(false);
+  };
+
   const current = images[idx];
+
+  if (!isVisible) return null;
+
 
   return (
     <button
