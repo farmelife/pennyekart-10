@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Wrench, LogOut, Phone, Home } from "lucide-react";
 import {
-  PRICE_UNITS, REQUEST_STATUSES, formatServicePrice, statusLabel,
+  PRICE_UNITS, REQUEST_STATUSES, formatServicePrice, statusLabel, unitsForCategoryType,
   type UtilityCategory, type UtilityService, type UtilityRequest,
 } from "@/lib/utilityServices";
 
@@ -34,6 +34,9 @@ const UtilityPartnerDashboard = () => {
   const [form, setForm] = useState(emptyService);
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+
+  const selectedCategory = categories.find((c) => c.id === form.category_id);
+  const unitOptions = form.category_id ? unitsForCategoryType(selectedCategory?.category_type) : PRICE_UNITS;
 
   const fetchAll = async () => {
     if (!profile?.user_id) return;
@@ -151,7 +154,12 @@ const UtilityPartnerDashboard = () => {
                     <div><Label>Service Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
                     <div>
                       <Label>Category</Label>
-                      <Select value={form.category_id || "none"} onValueChange={(v) => setForm({ ...form, category_id: v === "none" ? "" : v })}>
+                      <Select value={form.category_id || "none"} onValueChange={(v) => {
+                        const id = v === "none" ? "" : v;
+                        const nextUnits = id ? unitsForCategoryType(categories.find((c) => c.id === id)?.category_type) : PRICE_UNITS;
+                        const keep = nextUnits.some((u) => u.value === form.price_unit);
+                        setForm({ ...form, category_id: id, price_unit: keep ? form.price_unit : nextUnits[0].value });
+                      }}>
                         <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No category</SelectItem>
@@ -167,7 +175,7 @@ const UtilityPartnerDashboard = () => {
                         <Label>Price Type</Label>
                         <Select value={form.price_unit} onValueChange={(v) => setForm({ ...form, price_unit: v })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>{PRICE_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
+                          <SelectContent>{unitOptions.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
                     </div>
