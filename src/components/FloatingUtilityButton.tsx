@@ -36,7 +36,7 @@ const FloatingUtilityButton = () => {
     <button
       onClick={() => navigate("/utility-services")}
       aria-label="Open utility services"
-      className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-primary/40 bg-card shadow-lg transition-transform hover:scale-110 md:bottom-6"
+      className="fixed bottom-40 right-4 z-50 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-primary/40 bg-card shadow-lg transition-transform hover:scale-110 md:bottom-24"
     >
       {current ? (
         <img
