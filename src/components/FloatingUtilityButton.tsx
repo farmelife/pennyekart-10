@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench } from "lucide-react";
+import { Wrench, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
 
 const FloatingUtilityButton = () => {
   const navigate = useNavigate();
