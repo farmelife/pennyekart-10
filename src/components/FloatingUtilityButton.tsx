@@ -65,8 +65,17 @@ const FloatingUtilityButton = () => {
       <span className="absolute inset-x-0 bottom-0 bg-primary/80 py-0.5 text-[7px] font-semibold uppercase tracking-wide text-primary-foreground">
         Utility
       </span>
+      <span
+        onClick={handleClose}
+        role="button"
+        aria-label="Close utility shortcut"
+        className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground shadow"
+      >
+        <X className="h-3 w-3" />
+      </span>
     </button>
   );
 };
+
 
 export default FloatingUtilityButton;
