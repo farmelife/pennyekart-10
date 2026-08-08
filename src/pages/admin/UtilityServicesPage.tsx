@@ -14,6 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import ImageUpload from "@/components/admin/ImageUpload";
+import UtilitySellerRegistrations from "@/components/admin/UtilitySellerRegistrations";
+
 import { Plus, Pencil, Trash2, Wrench, Phone, MapPin } from "lucide-react";
 import {
   CATEGORY_TYPES, unitsForCategoryType, REQUEST_STATUSES, formatServicePrice, priceUnitLabel, statusLabel,
