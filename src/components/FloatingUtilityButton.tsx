@@ -11,7 +11,7 @@ const FloatingUtilityButton = () => {
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
-        .from("utility_categories")
+        .from("utility_service_categories")
         .select("name, image_url")
         .eq("is_active", true)
         .order("sort_order");
