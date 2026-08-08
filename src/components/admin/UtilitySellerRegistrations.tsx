@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
-import { MapPin, Phone, Search, Users } from "lucide-react";
+import { ChevronDown, ChevronRight, MapPin, Phone, Search, Users } from "lucide-react";
 
 interface SellerProfile {
   id: string;
@@ -44,6 +46,13 @@ interface ServiceRow {
   is_approved: boolean;
 }
 
+interface SellerArea {
+  id: string;
+  seller_user_id: string;
+  local_body_id: string;
+  ward_number: number | null;
+}
+
 const UtilitySellerRegistrations = () => {
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
@@ -52,16 +61,17 @@ const UtilitySellerRegistrations = () => {
   const [localBodies, setLocalBodies] = useState<LocalBody[]>([]);
   const [districts, setDistricts] = useState<Record<string, string>>({});
   const [services, setServices] = useState<ServiceRow[]>([]);
+  const [areas, setAreas] = useState<SellerArea[]>([]);
   const [search, setSearch] = useState("");
   const [filterBody, setFilterBody] = useState("all");
   const [filterWard, setFilterWard] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
   const [target, setTarget] = useState<SellerProfile | null>(null);
-  // multi-allocation: local body id -> set of ward numbers (empty set = all wards)
+  // local body id -> selected wards (empty array = all wards of that body)
   const [alloc, setAlloc] = useState<Record<string, number[]>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [areas, setAreas] = useState<SellerArea[]>([]);
+  const [bodySearch, setBodySearch] = useState("");
   const [applyToServices, setApplyToServices] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -76,6 +86,7 @@ const UtilitySellerRegistrations = () => {
       supabase.from("locations_local_bodies").select("id, name, body_type, ward_count, district_id").order("name"),
       supabase.from("locations_districts").select("id, name"),
       supabase.from("utility_services").select("id, name, provider_user_id, local_body_id, ward_number, is_active, is_approved"),
+      supabase.from("utility_seller_areas").select("id, seller_user_id, local_body_id, ward_number"),
     ]);
     setSellers((profs.data as SellerProfile[]) ?? []);
     setLocalBodies((lbs.data as LocalBody[]) ?? []);
@@ -83,31 +94,53 @@ const UtilitySellerRegistrations = () => {
     (dists.data ?? []).forEach((d: any) => { dmap[d.id] = d.name; });
     setDistricts(dmap);
     setServices((svcs.data as ServiceRow[]) ?? []);
+    setAreas((ars.data as SellerArea[]) ?? []);
   };
 
   useEffect(() => { fetchAll(); }, []);
 
-  const bodyLabel = (id: string | null) => {
-    const lb = localBodies.find((l) => l.id === id);
-    if (!lb) return "—";
-    return `${lb.name} (${districts[lb.district_id] ?? "—"})`;
-  };
+  const bodyName = (id: string | null) => localBodies.find((l) => l.id === id)?.name ?? "—";
+
+  const areasOf = (userId: string) => areas.filter((a) => a.seller_user_id === userId);
 
   const servicesOf = (userId: string) => services.filter((s) => s.provider_user_id === userId);
+
+  const areaSummary = (userId: string) => {
+    const rows = areasOf(userId);
+    if (rows.length === 0) return [] as string[];
+    const grouped: Record<string, (number | null)[]> = {};
+    rows.forEach((r) => {
+      grouped[r.local_body_id] = [...(grouped[r.local_body_id] ?? []), r.ward_number];
+    });
+    return Object.entries(grouped).map(([lb, wards]) => {
+      const nums = wards.filter((w): w is number => w != null).sort((a, b) => a - b);
+      return `${bodyName(lb)}: ${nums.length ? `Ward ${nums.join(", ")}` : "All wards"}`;
+    });
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sellers.filter((s) => {
       if (q && ![s.full_name, s.mobile_number, s.email, s.company_name].some((v) => v?.toLowerCase().includes(q))) return false;
-      if (filterBody !== "all" && s.local_body_id !== filterBody) return false;
-      if (filterWard !== "all" && String(s.ward_number ?? "") !== filterWard) return false;
+      const rows = areas.filter((a) => a.seller_user_id === s.user_id);
+      if (filterBody !== "all") {
+        const match = s.local_body_id === filterBody || rows.some((a) => a.local_body_id === filterBody);
+        if (!match) return false;
+      }
+      if (filterWard !== "all") {
+        const w = Number(filterWard);
+        const match =
+          s.ward_number === w ||
+          rows.some((a) => (filterBody === "all" || a.local_body_id === filterBody) && (a.ward_number === w || a.ward_number == null));
+        if (!match) return false;
+      }
       if (filterStatus === "approved" && !s.is_approved) return false;
       if (filterStatus === "pending" && s.is_approved) return false;
       if (filterStatus === "blocked" && !s.is_blocked) return false;
-      if (filterStatus === "unassigned" && s.local_body_id) return false;
+      if (filterStatus === "unassigned" && (s.local_body_id || rows.length > 0)) return false;
       return true;
     });
-  }, [sellers, search, filterBody, filterWard, filterStatus]);
+  }, [sellers, areas, search, filterBody, filterWard, filterStatus]);
 
   const filterWardOptions = useMemo(() => {
     const lb = localBodies.find((l) => l.id === filterBody);
@@ -115,37 +148,90 @@ const UtilitySellerRegistrations = () => {
     return Array.from({ length: count }, (_, i) => i + 1);
   }, [filterBody, localBodies]);
 
-  const allocWardOptions = useMemo(() => {
-    const lb = localBodies.find((l) => l.id === allocBody);
-    const count = lb?.ward_count ?? 0;
-    return Array.from({ length: count }, (_, i) => i + 1);
-  }, [allocBody, localBodies]);
+  const dialogBodies = useMemo(() => {
+    const q = bodySearch.trim().toLowerCase();
+    if (!q) return localBodies;
+    return localBodies.filter((l) => l.name.toLowerCase().includes(q) || (districts[l.district_id] ?? "").toLowerCase().includes(q));
+  }, [localBodies, bodySearch, districts]);
 
   const openAllocate = (s: SellerProfile) => {
+    const next: Record<string, number[]> = {};
+    areasOf(s.user_id).forEach((a) => {
+      next[a.local_body_id] = a.ward_number == null
+        ? (next[a.local_body_id] ?? [])
+        : [...(next[a.local_body_id] ?? []), a.ward_number];
+    });
+    if (Object.keys(next).length === 0 && s.local_body_id) {
+      next[s.local_body_id] = s.ward_number ? [s.ward_number] : [];
+    }
     setTarget(s);
-    setAllocBody(s.local_body_id ?? "");
-    setAllocWard(s.ward_number ? String(s.ward_number) : "");
+    setAlloc(next);
+    setExpanded(Object.keys(next)[0] ?? null);
+    setBodySearch("");
     setApplyToServices(true);
+  };
+
+  const toggleBody = (id: string, checked: boolean) => {
+    setAlloc((prev) => {
+      const next = { ...prev };
+      if (checked) { next[id] = prev[id] ?? []; } else { delete next[id]; }
+      return next;
+    });
+    if (checked) setExpanded(id);
+  };
+
+  const toggleWard = (bodyId: string, ward: number, checked: boolean) => {
+    setAlloc((prev) => {
+      const cur = prev[bodyId] ?? [];
+      const next = checked ? [...cur, ward] : cur.filter((w) => w !== ward);
+      return { ...prev, [bodyId]: next };
+    });
+  };
+
+  const setAllWards = (bodyId: string, all: boolean) => {
+    const lb = localBodies.find((l) => l.id === bodyId);
+    setAlloc((prev) => ({
+      ...prev,
+      [bodyId]: all ? [] : Array.from({ length: lb?.ward_count ?? 0 }, (_, i) => i + 1),
+    }));
   };
 
   const saveAllocation = async () => {
     if (!target) return;
-    if (!allocBody) { toast({ title: "Select a local body", variant: "destructive" }); return; }
+    const bodyIds = Object.keys(alloc);
+    if (bodyIds.length === 0) { toast({ title: "Select at least one local body", variant: "destructive" }); return; }
     setSaving(true);
-    const ward = allocWard ? Number(allocWard) : null;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ local_body_id: allocBody, ward_number: ward })
-      .eq("id", target.id);
-    if (error) {
+
+    const rows = bodyIds.flatMap((bodyId) => {
+      const wards = alloc[bodyId];
+      if (!wards || wards.length === 0) return [{ seller_user_id: target.user_id, local_body_id: bodyId, ward_number: null }];
+      return wards.map((w) => ({ seller_user_id: target.user_id, local_body_id: bodyId, ward_number: w }));
+    });
+
+    const { error: delErr } = await supabase.from("utility_seller_areas").delete().eq("seller_user_id", target.user_id);
+    if (delErr) {
       setSaving(false);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: delErr.message, variant: "destructive" });
       return;
     }
+    const { error: insErr } = await supabase.from("utility_seller_areas").insert(rows);
+    if (insErr) {
+      setSaving(false);
+      toast({ title: "Error", description: insErr.message, variant: "destructive" });
+      return;
+    }
+
+    // keep the profile's primary location in sync with the first selected area
+    const primary = rows[0];
+    await supabase
+      .from("profiles")
+      .update({ local_body_id: primary.local_body_id, ward_number: primary.ward_number })
+      .eq("id", target.id);
+
     if (applyToServices) {
       const { error: svcErr } = await supabase
         .from("utility_services")
-        .update({ local_body_id: allocBody, ward_number: ward })
+        .update({ local_body_id: primary.local_body_id, ward_number: primary.ward_number })
         .eq("provider_user_id", target.user_id);
       if (svcErr) {
         setSaving(false);
@@ -153,9 +239,10 @@ const UtilitySellerRegistrations = () => {
         return;
       }
     }
+
     setSaving(false);
     setTarget(null);
-    toast({ title: "Location reallocated" });
+    toast({ title: "Areas allocated", description: `${rows.length} area(s) saved` });
     fetchAll();
   };
 
@@ -166,6 +253,7 @@ const UtilitySellerRegistrations = () => {
   };
 
   const canEdit = hasPermission("update_services");
+  const totalSelected = Object.entries(alloc).reduce((n, [, wards]) => n + (wards.length === 0 ? 1 : wards.length), 0);
 
   return (
     <div className="space-y-3">
@@ -206,7 +294,7 @@ const UtilitySellerRegistrations = () => {
             <TableRow>
               <TableHead>Seller</TableHead>
               <TableHead>Contact</TableHead>
-              <TableHead>Location / Ward</TableHead>
+              <TableHead>Allocated areas</TableHead>
               <TableHead>Services</TableHead>
               <TableHead>Approved</TableHead>
               <TableHead>Blocked</TableHead>
@@ -216,6 +304,7 @@ const UtilitySellerRegistrations = () => {
           <TableBody>
             {filtered.map((s) => {
               const svcs = servicesOf(s.user_id);
+              const summary = areaSummary(s.user_id);
               return (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">
@@ -228,8 +317,22 @@ const UtilitySellerRegistrations = () => {
                     {s.email && <div className="text-xs text-muted-foreground">{s.email}</div>}
                   </TableCell>
                   <TableCell className="text-sm">
-                    <div className="flex items-center gap-1"><MapPin className="h-3 w-3" />{bodyLabel(s.local_body_id)}</div>
-                    <div className="text-xs text-muted-foreground">{s.ward_number ? `Ward ${s.ward_number}` : "No ward"}</div>
+                    {summary.length === 0 ? (
+                      <span className="text-muted-foreground">
+                        {s.local_body_id ? `${bodyName(s.local_body_id)}${s.ward_number ? ` — Ward ${s.ward_number}` : ""}` : "No areas"}
+                      </span>
+                    ) : (
+                      <div className="max-w-[260px] space-y-0.5">
+                        {summary.slice(0, 3).map((t) => (
+                          <div key={t} className="flex items-start gap-1 text-xs">
+                            <MapPin className="mt-0.5 h-3 w-3 shrink-0" />{t}
+                          </div>
+                        ))}
+                        {summary.length > 3 && (
+                          <div className="text-xs text-muted-foreground">+{summary.length - 3} more</div>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{svcs.length}</Badge>
@@ -243,7 +346,7 @@ const UtilitySellerRegistrations = () => {
                   <TableCell><Switch checked={s.is_blocked} disabled={!canEdit} onCheckedChange={(v) => toggleField(s, "is_blocked", v)} /></TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => openAllocate(s)}>
-                      <MapPin className="mr-1 h-3.5 w-3.5" /> Reallocate
+                      <MapPin className="mr-1 h-3.5 w-3.5" /> Allocate
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -259,35 +362,80 @@ const UtilitySellerRegistrations = () => {
       </div>
 
       <Dialog open={!!target} onOpenChange={(v) => { if (!v) setTarget(null); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Reallocate location — {target?.full_name || "Seller"}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Allocate areas — {target?.full_name || "Seller"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label>Local body</Label>
-              <Select value={allocBody} onValueChange={(v) => { setAllocBody(v); setAllocWard(""); }}>
-                <SelectTrigger><SelectValue placeholder="Select local body" /></SelectTrigger>
-                <SelectContent>
-                  {localBodies.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>{l.name} — {districts[l.district_id] ?? ""} ({l.body_type})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Input placeholder="Search panchayath / municipality" value={bodySearch} onChange={(e) => setBodySearch(e.target.value)} />
+            <div className="text-xs text-muted-foreground">
+              Select multiple local bodies. Expand one to pick specific wards — leaving all wards unticked means the whole local body.
             </div>
-            <div>
-              <Label>Ward</Label>
-              <Select value={allocWard} onValueChange={setAllocWard} disabled={!allocBody}>
-                <SelectTrigger><SelectValue placeholder={allocBody ? "Select ward" : "Select local body first"} /></SelectTrigger>
-                <SelectContent>
-                  {allocWardOptions.map((w) => <SelectItem key={w} value={String(w)}>Ward {w}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            <ScrollArea className="h-[320px] rounded-md border">
+              <div className="divide-y">
+                {dialogBodies.map((l) => {
+                  const selected = Object.prototype.hasOwnProperty.call(alloc, l.id);
+                  const wards = alloc[l.id] ?? [];
+                  const isOpen = expanded === l.id;
+                  return (
+                    <div key={l.id} className="p-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox checked={selected} onCheckedChange={(v) => toggleBody(l.id, !!v)} />
+                        <button
+                          type="button"
+                          className="flex flex-1 items-center gap-1 text-left text-sm"
+                          onClick={() => setExpanded(isOpen ? null : l.id)}
+                        >
+                          {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          <span className="font-medium">{l.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {districts[l.district_id] ?? ""} · {l.body_type}
+                          </span>
+                        </button>
+                        {selected && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {wards.length === 0 ? "All wards" : `${wards.length} ward(s)`}
+                          </Badge>
+                        )}
+                      </div>
+                      {isOpen && (
+                        <div className="mt-2 pl-6">
+                          <div className="mb-2 flex gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => { toggleBody(l.id, true); setAllWards(l.id, true); }}>
+                              Whole local body
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => { toggleBody(l.id, true); setAllWards(l.id, false); }}>
+                              Select all wards
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-5 gap-1">
+                            {Array.from({ length: l.ward_count }, (_, i) => i + 1).map((w) => (
+                              <label key={w} className="flex items-center gap-1 text-xs">
+                                <Checkbox
+                                  checked={wards.includes(w)}
+                                  onCheckedChange={(v) => { toggleBody(l.id, true); toggleWard(l.id, w, !!v); }}
+                                />
+                                {w}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {dialogBodies.length === 0 && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">No local bodies found</div>
+                )}
+              </div>
+            </ScrollArea>
+
             <div className="flex items-center gap-2">
               <Switch checked={applyToServices} onCheckedChange={setApplyToServices} />
-              <Label>Also apply to this seller's services ({target ? servicesOf(target.user_id).length : 0})</Label>
+              <Label>Also apply primary area to this seller's services ({target ? servicesOf(target.user_id).length : 0})</Label>
             </div>
             <Button className="w-full" onClick={saveAllocation} disabled={saving}>
-              {saving ? "Saving..." : "Save allocation"}
+              {saving ? "Saving..." : `Save ${totalSelected} allocation(s)`}
             </Button>
           </div>
         </DialogContent>
