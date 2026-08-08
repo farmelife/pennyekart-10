@@ -16,7 +16,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { Plus, Pencil, Trash2, Wrench, Phone, MapPin } from "lucide-react";
 import {
-  PRICE_UNITS, PRODUCT_UNITS, CATEGORY_TYPES, unitsForCategoryType, REQUEST_STATUSES, formatServicePrice, priceUnitLabel, statusLabel,
+  CATEGORY_TYPES, unitsForCategoryType, REQUEST_STATUSES, formatServicePrice, priceUnitLabel, statusLabel,
   type UtilityCategory, type UtilityService, type UtilityRequest,
 } from "@/lib/utilityServices";
 
