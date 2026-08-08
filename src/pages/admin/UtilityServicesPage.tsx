@@ -14,6 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import ImageUpload from "@/components/admin/ImageUpload";
+import UtilitySellerRegistrations from "@/components/admin/UtilitySellerRegistrations";
+
 import { Plus, Pencil, Trash2, Wrench, Phone, MapPin } from "lucide-react";
 import {
   CATEGORY_TYPES, unitsForCategoryType, REQUEST_STATUSES, formatServicePrice, priceUnitLabel, statusLabel,
@@ -159,7 +161,9 @@ const UtilityServicesPage = () => {
           <TabsTrigger value="categories">Categories <Badge variant="outline" className="ml-2">{categories.length}</Badge></TabsTrigger>
           <TabsTrigger value="services">Services <Badge variant="outline" className="ml-2">{services.length}</Badge></TabsTrigger>
           <TabsTrigger value="requests">Requests <Badge variant="outline" className="ml-2">{pendingCount}</Badge></TabsTrigger>
+          <TabsTrigger value="sellers">Seller Registrations</TabsTrigger>
         </TabsList>
+
 
         {/* CATEGORIES */}
         <TabsContent value="categories" className="mt-4">
@@ -371,7 +375,13 @@ const UtilityServicesPage = () => {
           </div>
           <p className="mt-2 text-xs text-muted-foreground">Latest status: {requests[0] ? statusLabel(requests[0].status) : "—"}</p>
         </TabsContent>
+
+        {/* SELLER REGISTRATIONS */}
+        <TabsContent value="sellers" className="mt-4">
+          <UtilitySellerRegistrations />
+        </TabsContent>
       </Tabs>
+
     </AdminLayout>
   );
 };
