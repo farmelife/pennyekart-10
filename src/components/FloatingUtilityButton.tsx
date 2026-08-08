@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench } from "lucide-react";
+import { Wrench, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
 
 const FloatingUtilityButton = () => {
   const navigate = useNavigate();
   const [images, setImages] = useState<{ url: string; name: string }[]>([]);
   const [idx, setIdx] = useState(0);
+  const [isVisible, setIsVisible] = useState(() => {
+    return localStorage.getItem("hideFloatingUtility") !== "true";
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -30,7 +34,16 @@ const FloatingUtilityButton = () => {
     return () => clearInterval(t);
   }, [images.length]);
 
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    localStorage.setItem("hideFloatingUtility", "true");
+    setIsVisible(false);
+  };
+
   const current = images[idx];
+
+  if (!isVisible) return null;
+
 
   return (
     <button
@@ -52,8 +65,17 @@ const FloatingUtilityButton = () => {
       <span className="absolute inset-x-0 bottom-0 bg-primary/80 py-0.5 text-[7px] font-semibold uppercase tracking-wide text-primary-foreground">
         Utility
       </span>
+      <span
+        onClick={handleClose}
+        role="button"
+        aria-label="Close utility shortcut"
+        className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground shadow"
+      >
+        <X className="h-3 w-3" />
+      </span>
     </button>
   );
 };
+
 
 export default FloatingUtilityButton;
