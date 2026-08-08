@@ -2105,6 +2105,7 @@ export type Database = {
       }
       utility_service_categories: {
         Row: {
+          category_type: string
           created_at: string
           description: string | null
           icon: string | null
@@ -2116,6 +2117,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_type?: string
           created_at?: string
           description?: string | null
           icon?: string | null
@@ -2127,6 +2129,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_type?: string
           created_at?: string
           description?: string | null
           icon?: string | null
