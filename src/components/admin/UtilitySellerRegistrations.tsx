@@ -58,13 +58,15 @@ const UtilitySellerRegistrations = () => {
   const [filterStatus, setFilterStatus] = useState("all");
 
   const [target, setTarget] = useState<SellerProfile | null>(null);
-  const [allocBody, setAllocBody] = useState("");
-  const [allocWard, setAllocWard] = useState("");
+  // multi-allocation: local body id -> set of ward numbers (empty set = all wards)
+  const [alloc, setAlloc] = useState<Record<string, number[]>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [areas, setAreas] = useState<SellerArea[]>([]);
   const [applyToServices, setApplyToServices] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const fetchAll = async () => {
-    const [profs, lbs, dists, svcs] = await Promise.all([
+    const [profs, lbs, dists, svcs, ars] = await Promise.all([
       supabase
         .from("profiles")
         .select("id, user_id, full_name, email, mobile_number, company_name, is_approved, is_blocked, local_body_id, ward_number, created_at")
