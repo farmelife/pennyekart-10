@@ -286,6 +286,8 @@ const Index = () => {
 
       <Footer />
       <MobileBottomNav />
+      <FloatingUtilityButton />
+
 
       <WalletRewardPopup
         open={showSignupReward}
