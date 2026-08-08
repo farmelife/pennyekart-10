@@ -15,6 +15,7 @@ import WalletRewardPopup from "@/components/WalletRewardPopup";
 import OfferFlashPopup from "@/components/OfferFlashPopup";
 import ComboOffersSection from "@/components/customer/ComboOffersSection";
 import ScratchCardWidget from "@/components/ScratchCardWidget";
+import FloatingUtilityButton from "@/components/FloatingUtilityButton";
 import SortFilterBar, { SortOption } from "@/components/SortFilterBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useAreaProducts } from "@/hooks/useAreaProducts";
