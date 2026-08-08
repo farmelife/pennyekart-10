@@ -159,7 +159,9 @@ const UtilityServicesPage = () => {
           <TabsTrigger value="categories">Categories <Badge variant="outline" className="ml-2">{categories.length}</Badge></TabsTrigger>
           <TabsTrigger value="services">Services <Badge variant="outline" className="ml-2">{services.length}</Badge></TabsTrigger>
           <TabsTrigger value="requests">Requests <Badge variant="outline" className="ml-2">{pendingCount}</Badge></TabsTrigger>
+          <TabsTrigger value="sellers">Seller Registrations</TabsTrigger>
         </TabsList>
+
 
         {/* CATEGORIES */}
         <TabsContent value="categories" className="mt-4">
