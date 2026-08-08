@@ -7,6 +7,20 @@ export const PRICE_UNITS = [
   { value: "quote", label: "On request / quote" },
 ];
 
+export const PRODUCT_UNITS = [
+  { value: "g", label: "G (gram)" },
+  { value: "kg", label: "Kg (Kilo Gram)" },
+  { value: "nos", label: "Nos (Numbers)" },
+];
+
+export const CATEGORY_TYPES = [
+  { value: "service", label: "Service" },
+  { value: "product", label: "Product" },
+];
+
+export const unitsForCategoryType = (type?: string | null) =>
+  type === "product" ? PRODUCT_UNITS : PRICE_UNITS;
+
 export const REQUEST_STATUSES = [
   { value: "pending", label: "Pending" },
   { value: "assigned", label: "Assigned" },
@@ -16,13 +30,15 @@ export const REQUEST_STATUSES = [
 ];
 
 export const priceUnitLabel = (unit?: string | null) =>
-  PRICE_UNITS.find((u) => u.value === unit)?.label ?? "Fixed price";
+  [...PRICE_UNITS, ...PRODUCT_UNITS].find((u) => u.value === unit)?.label ?? "Fixed price";
 
 export const statusLabel = (status?: string | null) =>
   REQUEST_STATUSES.find((s) => s.value === status)?.label ?? status ?? "—";
 
 export const formatServicePrice = (price: number, unit?: string | null) => {
   if (unit === "quote" || !price) return "On request";
+  const productUnit = PRODUCT_UNITS.find((u) => u.value === unit);
+  if (productUnit) return `₹${price} / ${unit === "nos" ? "no." : unit}`;
   const suffix =
     unit === "hour" ? " / hour" : unit === "day" ? " / day" : unit === "visit" ? " / visit" : unit === "sqft" ? " / sq.ft" : "";
   return `₹${price}${suffix}`;
@@ -36,6 +52,7 @@ export interface UtilityCategory {
   image_url: string | null;
   sort_order: number;
   is_active: boolean;
+  category_type?: string | null;
 }
 
 export interface UtilityService {

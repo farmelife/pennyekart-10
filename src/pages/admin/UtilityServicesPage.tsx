@@ -16,11 +16,11 @@ import { usePermissions } from "@/hooks/usePermissions";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { Plus, Pencil, Trash2, Wrench, Phone, MapPin } from "lucide-react";
 import {
-  PRICE_UNITS, REQUEST_STATUSES, formatServicePrice, priceUnitLabel, statusLabel,
+  PRICE_UNITS, PRODUCT_UNITS, CATEGORY_TYPES, unitsForCategoryType, REQUEST_STATUSES, formatServicePrice, priceUnitLabel, statusLabel,
   type UtilityCategory, type UtilityService, type UtilityRequest,
 } from "@/lib/utilityServices";
 
-const emptyCategory = { name: "", description: "", icon: "", image_url: "", sort_order: 0, is_active: true };
+const emptyCategory = { name: "", description: "", icon: "", image_url: "", sort_order: 0, is_active: true, category_type: "service" };
 const emptyService = {
   name: "", description: "", image_url: "", category_id: "", price: 0, price_unit: "fixed",
   contact_phone: "", contact_whatsapp: "", coverage_area: "", is_active: true, is_approved: true, sort_order: 0,
@@ -113,6 +113,7 @@ const UtilityServicesPage = () => {
     setCatForm({
       name: c.name, description: c.description ?? "", icon: c.icon ?? "",
       image_url: c.image_url ?? "", sort_order: c.sort_order, is_active: c.is_active,
+      category_type: c.category_type ?? "service",
     });
     setCatEditId(c.id); setCatOpen(true);
   };
@@ -125,6 +126,18 @@ const UtilityServicesPage = () => {
       coverage_area: s.coverage_area ?? "", is_active: s.is_active, is_approved: s.is_approved, sort_order: s.sort_order,
     });
     setSvcEditId(s.id); setSvcOpen(true);
+  };
+
+  const selectedCat = categories.find((c) => c.id === svcForm.category_id);
+  const selectedCatIsProduct = selectedCat?.category_type === "product";
+  const svcUnits = unitsForCategoryType(selectedCat?.category_type);
+
+  const handleCategoryChange = (v: string) => {
+    const id = v === "none" ? "" : v;
+    const cat = categories.find((c) => c.id === id);
+    const units = unitsForCategoryType(cat?.category_type);
+    const keep = units.some((u) => u.value === svcForm.price_unit);
+    setSvcForm({ ...svcForm, category_id: id, price_unit: keep ? svcForm.price_unit : units[0].value });
   };
 
   const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "—";
@@ -158,6 +171,16 @@ const UtilityServicesPage = () => {
                   <DialogHeader><DialogTitle>{catEditId ? "Edit Category" : "New Category"}</DialogTitle></DialogHeader>
                   <div className="space-y-3">
                     <div><Label>Name</Label><Input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} placeholder="e.g. Electrical Work" /></div>
+                    <div>
+                      <Label>Type</Label>
+                      <Select value={catForm.category_type} onValueChange={(v) => setCatForm({ ...catForm, category_type: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{CATEGORY_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Product categories use item units (G / Kg / Nos); service categories keep the usual price types.
+                      </p>
+                    </div>
                     <div><Label>Description</Label><Textarea value={catForm.description} onChange={(e) => setCatForm({ ...catForm, description: e.target.value })} rows={2} /></div>
                     <div><Label>Icon Name (Lucide)</Label><Input value={catForm.icon} onChange={(e) => setCatForm({ ...catForm, icon: e.target.value })} placeholder="e.g. Plug, Hammer" /></div>
                     <ImageUpload bucket="categories" value={catForm.image_url} onChange={(url) => setCatForm({ ...catForm, image_url: url })} label="Category Image" />
@@ -174,6 +197,7 @@ const UtilityServicesPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Services</TableHead>
                   <TableHead>Order</TableHead>
                   <TableHead>Active</TableHead>
@@ -187,6 +211,11 @@ const UtilityServicesPage = () => {
                       {c.name}
                       {c.description && <div className="text-xs text-muted-foreground">{c.description}</div>}
                     </TableCell>
+                    <TableCell>
+                      <Badge variant={c.category_type === "product" ? "default" : "outline"}>
+                        {c.category_type === "product" ? "Product" : "Service"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{services.filter((s) => s.category_id === c.id).length}</TableCell>
                     <TableCell>{c.sort_order}</TableCell>
                     <TableCell>{c.is_active ? "✓" : "✗"}</TableCell>
@@ -199,7 +228,7 @@ const UtilityServicesPage = () => {
                   </TableRow>
                 ))}
                 {categories.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No utility categories yet</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No utility categories yet</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -218,7 +247,7 @@ const UtilityServicesPage = () => {
                     <div><Label>Name</Label><Input value={svcForm.name} onChange={(e) => setSvcForm({ ...svcForm, name: e.target.value })} /></div>
                     <div>
                       <Label>Category</Label>
-                      <Select value={svcForm.category_id || "none"} onValueChange={(v) => setSvcForm({ ...svcForm, category_id: v === "none" ? "" : v })}>
+                      <Select value={svcForm.category_id || "none"} onValueChange={(v) => handleCategoryChange(v)}>
                         <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No category</SelectItem>
@@ -231,10 +260,10 @@ const UtilityServicesPage = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>Price (₹)</Label><Input type="number" min="0" value={svcForm.price} onChange={(e) => setSvcForm({ ...svcForm, price: +e.target.value })} /></div>
                       <div>
-                        <Label>Price Type</Label>
+                        <Label>{selectedCatIsProduct ? "Item Unit" : "Price Type"}</Label>
                         <Select value={svcForm.price_unit} onValueChange={(v) => setSvcForm({ ...svcForm, price_unit: v })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>{PRICE_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
+                          <SelectContent>{svcUnits.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
                     </div>
