@@ -2103,6 +2103,41 @@ export type Database = {
         }
         Relationships: []
       }
+      utility_seller_areas: {
+        Row: {
+          created_at: string
+          id: string
+          local_body_id: string
+          seller_user_id: string
+          updated_at: string
+          ward_number: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          local_body_id: string
+          seller_user_id: string
+          updated_at?: string
+          ward_number?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          local_body_id?: string
+          seller_user_id?: string
+          updated_at?: string
+          ward_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_seller_areas_local_body_id_fkey"
+            columns: ["local_body_id"]
+            isOneToOne: false
+            referencedRelation: "locations_local_bodies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       utility_service_categories: {
         Row: {
           category_type: string
