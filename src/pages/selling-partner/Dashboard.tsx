@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus, Pencil, BarChart3, TrendingUp, MapPin, ArrowDownLeft, Clock, Settings, Tag, Truck, Eye } from "lucide-react";
+import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus, Pencil, BarChart3, TrendingUp, MapPin, ArrowDownLeft, Clock, Settings, Tag, Truck, Eye, CheckCircle, XCircle } from "lucide-react";
 import OrderDetailDialog from "@/components/OrderDetailDialog";
 import PennyPrimeCoupons from "@/components/selling-partner/PennyPrimeCoupons";
 import { useToast } from "@/hooks/use-toast";
@@ -864,6 +864,15 @@ const SellingPartnerDashboard = () => {
                                     {o.status === "delivered" && isSelfDelivery && (
                                       <span className="text-xs text-muted-foreground">Self Delivered ✓</span>
                                     )}
+                                    {!["delivered", "cancelled", "return_confirmed"].includes(o.status) && !(isSelfDelivery && selfDeliveryNextStatus === "delivered") && (
+                                      <Button size="sm" onClick={async () => {
+                                        const { error } = await supabase.from("orders").update({ status: "delivered" } as any).eq("id", o.id);
+                                        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+                                        else { toast({ title: "Order marked delivered" }); fetchOrders(products); }
+                                      }}>
+                                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Delivered
+                                      </Button>
+                                    )}
                                     {!["delivered", "cancelled", "return_confirmed"].includes(o.status) && (
                                       <Button size="sm" variant="outline" className="text-destructive" onClick={async () => {
                                         if (!confirm("Cancel this order?")) return;
@@ -871,9 +880,13 @@ const SellingPartnerDashboard = () => {
                                         if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
                                         else { toast({ title: "Order cancelled" }); fetchOrders(products); }
                                       }}>
-                                        Cancel
+                                        <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
                                       </Button>
                                     )}
+                                    {o.status === "cancelled" && (
+                                      <span className="text-xs text-muted-foreground">Cancelled</span>
+                                    )}
+
                                   </div>
                                 </TableCell>
                               </TableRow>
