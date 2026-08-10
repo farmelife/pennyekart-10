@@ -254,10 +254,23 @@ const UtilityPartnerDashboard = () => {
                   )}
                   {r.preferred_date && <p className="text-xs text-muted-foreground">Preferred: {r.preferred_date}</p>}
                   {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
-                  <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
-                    <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                    <SelectContent>{REQUEST_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {r.status === "pending" && (
+                      <Button size="sm" onClick={() => setRequestStatus(r.id, "assigned")}>
+                        <Check className="mr-1.5 h-3.5 w-3.5" /> Accept
+                      </Button>
+                    )}
+                    {["assigned", "in_progress"].includes(r.status) && (
+                      <Button size="sm" onClick={() => setRequestStatus(r.id, "completed")}>
+                        <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Finish
+                      </Button>
+                    )}
+                    <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
+                      <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                      <SelectContent>{REQUEST_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+
                 </CardContent>
               </Card>
             ))}
