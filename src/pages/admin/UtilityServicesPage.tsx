@@ -43,6 +43,7 @@ const UtilityServicesPage = () => {
   const [svcForm, setSvcForm] = useState(emptyService);
   const [svcEditId, setSvcEditId] = useState<string | null>(null);
   const [svcOpen, setSvcOpen] = useState(false);
+  const [packsFor, setPacksFor] = useState<UtilityService | null>(null);
 
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
