@@ -34,7 +34,7 @@ const UtilityServices = () => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<UtilityService | null>(null);
-  const [form, setForm] = useState({ contact_name: "", contact_phone: "", address: "", preferred_date: "", notes: "" });
+  const [form, setForm] = useState({ contact_name: "", contact_phone: "", address: "" });
   const [submitting, setSubmitting] = useState(false);
   const [variants, setVariants] = useState<UtilityVariant[]>([]);
   const [variantId, setVariantId] = useState<string | null>(null);
