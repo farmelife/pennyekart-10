@@ -65,6 +65,26 @@ const UtilityPartnerDashboard = () => {
 
   useEffect(() => { fetchAll(); }, [profile?.user_id]);
 
+  // Poll + realtime so new requests pop up immediately
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    const interval = setInterval(fetchAll, 30000);
+    const channel = supabase
+      .channel(`utility-requests-${profile.user_id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "utility_service_requests" }, () => fetchAll())
+      .subscribe();
+    return () => { clearInterval(interval); supabase.removeChannel(channel); };
+  }, [profile?.user_id, services.length]);
+
+  // Popup when a new pending request arrives
+  useEffect(() => {
+    const count = requests.filter((r) => r.status === "pending").length;
+    if (count > prevPendingRef.current && prevPendingRef.current !== -1) setAlertOpen(true);
+    if (prevPendingRef.current === -1 && count > 0) setAlertOpen(true);
+    prevPendingRef.current = count;
+  }, [requests]);
+
+
   const save = async () => {
     if (!profile?.user_id) return;
     if (!form.name.trim()) { toast({ title: "Service name is required", variant: "destructive" }); return; }
