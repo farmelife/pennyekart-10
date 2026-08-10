@@ -16,7 +16,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import ImageUpload from "@/components/admin/ImageUpload";
 import UtilitySellerRegistrations from "@/components/admin/UtilitySellerRegistrations";
 
-import { Plus, Pencil, Trash2, Wrench, Phone, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Wrench, Phone, MapPin, Package } from "lucide-react";
+import VariantManager from "@/components/utility/VariantManager";
 import {
   CATEGORY_TYPES, unitsForCategoryType, REQUEST_STATUSES, formatServicePrice, priceUnitLabel, statusLabel,
   type UtilityCategory, type UtilityService, type UtilityRequest,
@@ -317,6 +318,9 @@ const UtilityServicesPage = () => {
                     <TableCell><Switch checked={s.is_active} onCheckedChange={(v) => toggleServiceField(s.id, "is_active", v)} /></TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {hasPermission("update_services") && categories.find((c) => c.id === s.category_id)?.category_type === "product" && (
+                          <Button variant="ghost" size="sm" onClick={() => setPacksFor(s)} title="Manage packs"><Package className="h-3.5 w-3.5" /></Button>
+                        )}
                         {hasPermission("update_services") && <Button variant="ghost" size="sm" onClick={() => openSvcEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button>}
                         {hasPermission("delete_services") && <Button variant="ghost" size="sm" onClick={() => deleteRow("utility_services", s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>}
                       </div>
@@ -339,6 +343,7 @@ const UtilityServicesPage = () => {
                 <TableRow>
                   <TableHead>Customer</TableHead>
                   <TableHead>Service</TableHead>
+                  <TableHead>Order</TableHead>
                   <TableHead>Preferred Date</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Status</TableHead>
@@ -354,6 +359,14 @@ const UtilityServicesPage = () => {
                       {r.address && <div className="text-xs text-muted-foreground">{r.address}</div>}
                     </TableCell>
                     <TableCell>{serviceName(r.service_id)}</TableCell>
+                    <TableCell className="text-sm">
+                      {r.variant_label ? (
+                        <>
+                          <div className="font-medium">{r.variant_label} × {r.quantity ?? 1}</div>
+                          {r.total_amount ? <div className="text-xs text-muted-foreground">₹{Number(r.total_amount)}</div> : null}
+                        </>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell className="text-sm">{r.preferred_date ?? "—"}</TableCell>
                     <TableCell className="max-w-[220px] text-xs text-muted-foreground">{r.notes ?? "—"}</TableCell>
                     <TableCell>
@@ -368,7 +381,7 @@ const UtilityServicesPage = () => {
                   </TableRow>
                 ))}
                 {requests.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No service requests yet</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="py-8 text-center text-muted-foreground">No service requests yet</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
