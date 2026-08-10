@@ -34,7 +34,7 @@ const UtilityServices = () => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<UtilityService | null>(null);
-  const [form, setForm] = useState({ contact_name: "", contact_phone: "", address: "" });
+  const [form, setForm] = useState({ contact_name: "", contact_phone: "", address: "", preferred_date: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);
   const [variants, setVariants] = useState<UtilityVariant[]>([]);
   const [variantId, setVariantId] = useState<string | null>(null);
@@ -145,6 +145,8 @@ const UtilityServices = () => {
       contact_name: profile?.full_name ?? "",
       contact_phone: (profile as any)?.mobile_number ?? "",
       address: (profile as any)?.business_address ?? "",
+      preferred_date: "",
+      notes: "",
     });
     setBooking(s);
   };
@@ -166,6 +168,8 @@ const UtilityServices = () => {
       contact_name: form.contact_name.trim(),
       contact_phone: form.contact_phone,
       address: form.address || null,
+      preferred_date: form.preferred_date || null,
+      notes: form.notes || null,
       variant_id: selectedVariant?.id ?? null,
       variant_label: selectedVariant?.label ?? null,
       quantity: qty,
@@ -407,6 +411,8 @@ const UtilityServices = () => {
             <div><Label>Your Name</Label><Input value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} /></div>
             <div><Label>Phone</Label><Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} placeholder="10-digit number" /></div>
             <div><Label>Address</Label><Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+            <div><Label>{variants.length ? "Preferred Delivery Date" : "Preferred Date"}</Label><Input type="date" value={form.preferred_date} onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} /></div>
+            <div><Label>Notes</Label><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={variants.length ? "Any instructions for this order" : "Describe the work needed"} /></div>
             <Button className="w-full" onClick={submitRequest} disabled={submitting}>
               {submitting ? "Sending..." : variants.length ? `Place Order · ₹${orderTotal}` : "Send Request"}
             </Button>
