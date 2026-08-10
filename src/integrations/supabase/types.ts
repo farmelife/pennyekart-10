@@ -2188,10 +2188,15 @@ export type Database = {
           id: string
           notes: string | null
           preferred_date: string | null
+          quantity: number
           quoted_amount: number | null
           service_id: string
           status: string
+          total_amount: number | null
+          unit_price: number | null
           updated_at: string
+          variant_id: string | null
+          variant_label: string | null
         }
         Insert: {
           address?: string | null
@@ -2203,10 +2208,15 @@ export type Database = {
           id?: string
           notes?: string | null
           preferred_date?: string | null
+          quantity?: number
           quoted_amount?: number | null
           service_id: string
           status?: string
+          total_amount?: number | null
+          unit_price?: number | null
           updated_at?: string
+          variant_id?: string | null
+          variant_label?: string | null
         }
         Update: {
           address?: string | null
@@ -2218,14 +2228,79 @@ export type Database = {
           id?: string
           notes?: string | null
           preferred_date?: string | null
+          quantity?: number
           quoted_amount?: number | null
           service_id?: string
           status?: string
+          total_amount?: number | null
+          unit_price?: number | null
           updated_at?: string
+          variant_id?: string | null
+          variant_label?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "utility_service_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "utility_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_service_requests_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "utility_service_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      utility_service_variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          mrp: number
+          pack_size: number
+          price: number
+          service_id: string
+          sort_order: number
+          stock: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          mrp?: number
+          pack_size?: number
+          price?: number
+          service_id: string
+          sort_order?: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          mrp?: number
+          pack_size?: number
+          price?: number
+          service_id?: string
+          sort_order?: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_service_variants_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "utility_services"
