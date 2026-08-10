@@ -406,7 +406,7 @@ const UtilityServices = () => {
             )}
             <div><Label>Your Name</Label><Input value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} /></div>
             <div><Label>Phone</Label><Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} placeholder="10-digit number" /></div>
-            <div><Label>Address</Label><Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            <div><Label>Address</Label><Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
             <Button className="w-full" onClick={submitRequest} disabled={submitting}>
               {submitting ? "Sending..." : variants.length ? `Place Order · ₹${orderTotal}` : "Send Request"}
             </Button>
