@@ -344,7 +344,9 @@ const UtilityServices = () => {
                     <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{s.coverage_area}</p>
                   )}
                   <div className="flex gap-2 pt-1">
-                    <Button size="sm" className="flex-1" onClick={() => openBooking(s)}>Request Service</Button>
+                    <Button size="sm" className="flex-1" onClick={() => openBooking(s)}>
+                      {isProductCat ? (<><ShoppingCart className="mr-1 h-3.5 w-3.5" />Order Now</>) : "Request Service"}
+                    </Button>
                     {s.contact_phone && (
                       <Button size="sm" variant="outline" asChild>
                         <a href={`tel:${s.contact_phone}`} aria-label={`Call ${s.name}`}><Phone className="h-4 w-4" /></a>
@@ -361,15 +363,58 @@ const UtilityServices = () => {
 
       <Dialog open={!!booking} onOpenChange={(v) => !v && setBooking(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Request: {booking?.name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{variants.length ? "Order" : "Request"}: {booking?.name}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
+            {variants.length > 0 && (
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div>
+                  <Label>Choose pack</Label>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {variants.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setVariantId(v.id)}
+                        className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                          v.id === variantId ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary"
+                        }`}
+                      >
+                        <span className="font-medium">{v.label}</span>
+                        <span className="ml-2 text-xs opacity-80">₹{Number(v.price)}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {selectedVariant && selectedVariant.stock <= 0 && (
+                    <p className="mt-1 text-xs text-destructive">Out of stock — supplier will confirm availability.</p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Quantity</Label>
+                  <div className="flex items-center gap-2">
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">
+                      <Minus className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="w-8 text-center font-semibold">{qty}</span>
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setQty((q) => Math.min(99, q + 1))} aria-label="Increase quantity">
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between border-t pt-2 text-sm">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="text-lg font-bold text-primary">₹{orderTotal}</span>
+                </div>
+              </div>
+            )}
             <div><Label>Your Name</Label><Input value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} /></div>
             <div><Label>Phone</Label><Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} placeholder="10-digit number" /></div>
             <div><Label>Address</Label><Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-            <div><Label>Preferred Date</Label><Input type="date" value={form.preferred_date} onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} /></div>
-            <div><Label>Notes</Label><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Describe the work needed" /></div>
+            <div><Label>{variants.length ? "Preferred Delivery Date" : "Preferred Date"}</Label><Input type="date" value={form.preferred_date} onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} /></div>
+            <div><Label>Notes</Label><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={variants.length ? "Any instructions for this order" : "Describe the work needed"} /></div>
             <Button className="w-full" onClick={submitRequest} disabled={submitting}>
-              {submitting ? "Sending..." : "Send Request"}
+              {submitting ? "Sending..." : variants.length ? `Place Order · ₹${orderTotal}` : "Send Request"}
             </Button>
           </div>
         </DialogContent>
