@@ -396,6 +396,14 @@ const UtilityServicesPage = () => {
         </TabsContent>
       </Tabs>
 
+      {packsFor && (
+        <VariantManager
+          serviceId={packsFor.id}
+          serviceName={packsFor.name}
+          open={!!packsFor}
+          onOpenChange={(v) => !v && setPacksFor(null)}
+        />
+      )}
     </AdminLayout>
   );
 };
