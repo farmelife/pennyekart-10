@@ -785,9 +785,14 @@ const SellingPartnerDashboard = () => {
                     </Card>
                   )}
 
-                  {otherOrders.length > 0 && (
+                  {(() => {
+                    const activeOrders = otherOrders.filter(o => !["delivered", "cancelled", "return_confirmed"].includes(o.status));
+                    const deliveredList = otherOrders.filter(o => o.status === "delivered");
+                    const cancelledList = otherOrders.filter(o => ["cancelled", "return_confirmed"].includes(o.status));
+                    const renderTable = (list: typeof otherOrders) => (
                     <div className="rounded-lg border overflow-x-auto">
                       <Table>
+
                         <TableHeader>
                           <TableRow>
                             <TableHead>Order ID</TableHead>
