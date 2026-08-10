@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Wrench, MapPin, Phone, Search, Building2, ChevronRight, Package } from "lucide-react";
-import { formatServicePrice, type UtilityCategory, type UtilityService } from "@/lib/utilityServices";
+import { ArrowLeft, Wrench, MapPin, Phone, Search, Building2, ChevronRight, Package, Minus, Plus, ShoppingCart } from "lucide-react";
+import { formatServicePrice, type UtilityCategory, type UtilityService, type UtilityVariant } from "@/lib/utilityServices";
 
 interface ProviderInfo {
   provider_user_id: string;
@@ -36,6 +36,9 @@ const UtilityServices = () => {
   const [booking, setBooking] = useState<UtilityService | null>(null);
   const [form, setForm] = useState({ contact_name: "", contact_phone: "", address: "", preferred_date: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [variants, setVariants] = useState<UtilityVariant[]>([]);
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [qty, setQty] = useState(1);
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -54,6 +57,31 @@ const UtilityServices = () => {
     };
     load();
   }, []);
+
+  const isProductCat = activeCat?.category_type === "product";
+
+  // Packs for the listing being ordered
+  useEffect(() => {
+    const loadVariants = async () => {
+      if (!booking) { setVariants([]); setVariantId(null); return; }
+      const { data } = await supabase
+        .from("utility_service_variants")
+        .select("*")
+        .eq("service_id", booking.id)
+        .eq("is_active", true)
+        .order("sort_order")
+        .order("pack_size");
+      const list = (data as UtilityVariant[]) ?? [];
+      setVariants(list);
+      setVariantId(list[0]?.id ?? null);
+      setQty(1);
+    };
+    loadVariants();
+  }, [booking]);
+
+  const selectedVariant = variants.find((v) => v.id === variantId) ?? null;
+  const unitPrice = selectedVariant ? Number(selectedVariant.price) : Number(booking?.price ?? 0);
+  const orderTotal = unitPrice * qty;
 
   const providerMap = useMemo(() => {
     const m = new Map<string, ProviderInfo>();
@@ -129,6 +157,10 @@ const UtilityServices = () => {
       toast({ title: "Enter your name and a valid 10-digit phone", variant: "destructive" });
       return;
     }
+    if (variants.length > 0 && !selectedVariant) {
+      toast({ title: "Please choose a pack", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from("utility_service_requests").insert({
       service_id: booking.id,
@@ -138,12 +170,20 @@ const UtilityServices = () => {
       address: form.address || null,
       preferred_date: form.preferred_date || null,
       notes: form.notes || null,
+      variant_id: selectedVariant?.id ?? null,
+      variant_label: selectedVariant?.label ?? null,
+      quantity: qty,
+      unit_price: unitPrice || null,
+      total_amount: orderTotal || null,
     });
     setSubmitting(false);
     if (error) {
       toast({ title: "Could not send request", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Request sent!", description: "The service provider will contact you shortly." });
+      toast({
+        title: variants.length ? "Order placed!" : "Request sent!",
+        description: "The supplier will contact you shortly.",
+      });
       setBooking(null);
     }
   };
@@ -304,7 +344,9 @@ const UtilityServices = () => {
                     <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{s.coverage_area}</p>
                   )}
                   <div className="flex gap-2 pt-1">
-                    <Button size="sm" className="flex-1" onClick={() => openBooking(s)}>Request Service</Button>
+                    <Button size="sm" className="flex-1" onClick={() => openBooking(s)}>
+                      {isProductCat ? (<><ShoppingCart className="mr-1 h-3.5 w-3.5" />Order Now</>) : "Request Service"}
+                    </Button>
                     {s.contact_phone && (
                       <Button size="sm" variant="outline" asChild>
                         <a href={`tel:${s.contact_phone}`} aria-label={`Call ${s.name}`}><Phone className="h-4 w-4" /></a>
@@ -321,15 +363,58 @@ const UtilityServices = () => {
 
       <Dialog open={!!booking} onOpenChange={(v) => !v && setBooking(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Request: {booking?.name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{variants.length ? "Order" : "Request"}: {booking?.name}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
+            {variants.length > 0 && (
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div>
+                  <Label>Choose pack</Label>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {variants.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setVariantId(v.id)}
+                        className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                          v.id === variantId ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary"
+                        }`}
+                      >
+                        <span className="font-medium">{v.label}</span>
+                        <span className="ml-2 text-xs opacity-80">₹{Number(v.price)}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {selectedVariant && selectedVariant.stock <= 0 && (
+                    <p className="mt-1 text-xs text-destructive">Out of stock — supplier will confirm availability.</p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Quantity</Label>
+                  <div className="flex items-center gap-2">
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">
+                      <Minus className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="w-8 text-center font-semibold">{qty}</span>
+                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setQty((q) => Math.min(99, q + 1))} aria-label="Increase quantity">
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between border-t pt-2 text-sm">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="text-lg font-bold text-primary">₹{orderTotal}</span>
+                </div>
+              </div>
+            )}
             <div><Label>Your Name</Label><Input value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} /></div>
             <div><Label>Phone</Label><Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} placeholder="10-digit number" /></div>
             <div><Label>Address</Label><Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-            <div><Label>Preferred Date</Label><Input type="date" value={form.preferred_date} onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} /></div>
-            <div><Label>Notes</Label><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Describe the work needed" /></div>
+            <div><Label>{variants.length ? "Preferred Delivery Date" : "Preferred Date"}</Label><Input type="date" value={form.preferred_date} onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} /></div>
+            <div><Label>Notes</Label><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={variants.length ? "Any instructions for this order" : "Describe the work needed"} /></div>
             <Button className="w-full" onClick={submitRequest} disabled={submitting}>
-              {submitting ? "Sending..." : "Send Request"}
+              {submitting ? "Sending..." : variants.length ? `Place Order · ₹${orderTotal}` : "Send Request"}
             </Button>
           </div>
         </DialogContent>

@@ -21,6 +21,24 @@ export const CATEGORY_TYPES = [
 export const unitsForCategoryType = (type?: string | null) =>
   type === "product" ? PRODUCT_UNITS : PRICE_UNITS;
 
+/** Pre-fix pack models a utility seller can quickly add to a product listing. */
+export const PRESET_PACKS: { label: string; unit: string; pack_size: number }[] = [
+  { label: "100 g", unit: "g", pack_size: 100 },
+  { label: "250 g", unit: "g", pack_size: 250 },
+  { label: "500 g", unit: "g", pack_size: 500 },
+  { label: "750 g", unit: "g", pack_size: 750 },
+  { label: "1 kg", unit: "kg", pack_size: 1 },
+  { label: "2 kg", unit: "kg", pack_size: 2 },
+  { label: "5 kg", unit: "kg", pack_size: 5 },
+  { label: "10 kg", unit: "kg", pack_size: 10 },
+  { label: "1 no.", unit: "nos", pack_size: 1 },
+  { label: "5 nos", unit: "nos", pack_size: 5 },
+  { label: "10 nos", unit: "nos", pack_size: 10 },
+  { label: "12 nos", unit: "nos", pack_size: 12 },
+];
+
+export const isProductCategory = (type?: string | null) => type === "product";
+
 export const REQUEST_STATUSES = [
   { value: "pending", label: "Pending" },
   { value: "assigned", label: "Assigned" },
@@ -88,4 +106,22 @@ export interface UtilityRequest {
   admin_notes: string | null;
   quoted_amount: number | null;
   created_at: string;
+  variant_id?: string | null;
+  variant_label?: string | null;
+  quantity?: number | null;
+  unit_price?: number | null;
+  total_amount?: number | null;
+}
+
+export interface UtilityVariant {
+  id: string;
+  service_id: string;
+  label: string;
+  unit: string;
+  pack_size: number;
+  price: number;
+  mrp: number;
+  stock: number;
+  is_active: boolean;
+  sort_order: number;
 }
