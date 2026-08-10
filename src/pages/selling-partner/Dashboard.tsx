@@ -785,9 +785,14 @@ const SellingPartnerDashboard = () => {
                     </Card>
                   )}
 
-                  {otherOrders.length > 0 && (
+                  {(() => {
+                    const activeOrders = otherOrders.filter(o => !["delivered", "cancelled", "return_confirmed"].includes(o.status));
+                    const deliveredList = otherOrders.filter(o => o.status === "delivered");
+                    const cancelledList = otherOrders.filter(o => ["cancelled", "return_confirmed"].includes(o.status));
+                    const renderTable = (list: typeof otherOrders) => (
                     <div className="rounded-lg border overflow-x-auto">
                       <Table>
+
                         <TableHeader>
                           <TableRow>
                             <TableHead>Order ID</TableHead>
@@ -799,7 +804,7 @@ const SellingPartnerDashboard = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {otherOrders.map(o => {
+                          {list.map(o => {
                             const myItems = Array.isArray(o.items) ? o.items.filter((item: any) => products.some(p => p.id === item.id)) : [];
                             const isSelfDelivery = (o as any).is_self_delivery === true;
                             const selfDeliveryNextStatus = (() => {
@@ -859,6 +864,16 @@ const SellingPartnerDashboard = () => {
                                     {o.status === "delivered" && isSelfDelivery && (
                                       <span className="text-xs text-muted-foreground">Self Delivered ✓</span>
                                     )}
+                                    {!["delivered", "cancelled", "return_confirmed"].includes(o.status) && (
+                                      <Button size="sm" variant="outline" className="text-destructive" onClick={async () => {
+                                        if (!confirm("Cancel this order?")) return;
+                                        const { error } = await supabase.from("orders").update({ status: "cancelled" } as any).eq("id", o.id);
+                                        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+                                        else { toast({ title: "Order cancelled" }); fetchOrders(products); }
+                                      }}>
+                                        Cancel
+                                      </Button>
+                                    )}
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -867,7 +882,28 @@ const SellingPartnerDashboard = () => {
                         </TableBody>
                       </Table>
                     </div>
-                  )}
+                  );
+
+                  return (
+                    <Tabs defaultValue="active">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="active">Active ({activeOrders.length})</TabsTrigger>
+                        <TabsTrigger value="delivered">Delivered ({deliveredList.length})</TabsTrigger>
+                        <TabsTrigger value="cancelled">Cancelled ({cancelledList.length})</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="active">
+                        {activeOrders.length ? renderTable(activeOrders) : <p className="text-muted-foreground text-center py-8">No active orders</p>}
+                      </TabsContent>
+                      <TabsContent value="delivered">
+                        {deliveredList.length ? renderTable(deliveredList) : <p className="text-muted-foreground text-center py-8">No delivered orders</p>}
+                      </TabsContent>
+                      <TabsContent value="cancelled">
+                        {cancelledList.length ? renderTable(cancelledList) : <p className="text-muted-foreground text-center py-8">No cancelled orders</p>}
+                      </TabsContent>
+                    </Tabs>
+                  );
+                })()}
+
                 </div>
               );
             })()}
