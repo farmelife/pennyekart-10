@@ -10,13 +10,27 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Wrench, MapPin, Phone, Search } from "lucide-react";
+import { ArrowLeft, Wrench, MapPin, Phone, Search, Building2, ChevronRight, Package } from "lucide-react";
 import { formatServicePrice, type UtilityCategory, type UtilityService } from "@/lib/utilityServices";
+
+interface ProviderInfo {
+  provider_user_id: string;
+  display_name: string | null;
+  company_name: string | null;
+  mobile_number: string | null;
+  business_address: string | null;
+  local_body_name: string | null;
+  ward_number: number | null;
+}
+
+const DIRECT_KEY = "__direct__";
 
 const UtilityServices = () => {
   const [categories, setCategories] = useState<UtilityCategory[]>([]);
   const [services, setServices] = useState<UtilityService[]>([]);
-  const [activeCat, setActiveCat] = useState<string>("all");
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [activeCat, setActiveCat] = useState<UtilityCategory | null>(null);
+  const [activeProvider, setActiveProvider] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<UtilityService | null>(null);
@@ -28,25 +42,70 @@ const UtilityServices = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [cats, svcs] = await Promise.all([
+      const [cats, svcs, provs] = await Promise.all([
         supabase.from("utility_service_categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("utility_services").select("*").eq("is_active", true).eq("is_approved", true).order("sort_order"),
+        (supabase as any).rpc("get_utility_providers"),
       ]);
       setCategories((cats.data as UtilityCategory[]) ?? []);
       setServices((svcs.data as UtilityService[]) ?? []);
+      setProviders((provs?.data as ProviderInfo[]) ?? []);
       setLoading(false);
     };
     load();
   }, []);
 
-  const visible = useMemo(() => {
-    let list = activeCat === "all" ? services : services.filter((s) => s.category_id === activeCat);
+  const providerMap = useMemo(() => {
+    const m = new Map<string, ProviderInfo>();
+    providers.forEach((p) => m.set(p.provider_user_id, p));
+    return m;
+  }, [providers]);
+
+  // Services inside the selected category
+  const catServices = useMemo(
+    () => (activeCat ? services.filter((s) => s.category_id === activeCat.id) : []),
+    [services, activeCat]
+  );
+
+  // Suppliers/companies inside the selected category
+  const catSuppliers = useMemo(() => {
+    const groups = new Map<string, { key: string; name: string; info?: ProviderInfo; items: UtilityService[] }>();
+    catServices.forEach((s) => {
+      const key = s.provider_user_id ?? DIRECT_KEY;
+      const info = s.provider_user_id ? providerMap.get(s.provider_user_id) : undefined;
+      const name = info?.display_name || (key === DIRECT_KEY ? "Pennyekart Direct" : "Service Provider");
+      if (!groups.has(key)) groups.set(key, { key, name, info, items: [] });
+      groups.get(key)!.items.push(s);
+    });
+    let list = Array.from(groups.values());
     if (query.trim()) {
       const q = query.toLowerCase();
-      list = list.filter((s) => s.name.toLowerCase().includes(q) || (s.description ?? "").toLowerCase().includes(q));
+      list = list.filter(
+        (g) => g.name.toLowerCase().includes(q) || g.items.some((s) => s.name.toLowerCase().includes(q))
+      );
     }
     return list;
-  }, [services, activeCat, query]);
+  }, [catServices, providerMap, query]);
+
+  const selectedSupplier = useMemo(
+    () => catSuppliers.find((g) => g.key === activeProvider) ?? null,
+    [catSuppliers, activeProvider]
+  );
+
+  const filteredCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    services.forEach((s) => s.category_id && counts.set(s.category_id, (counts.get(s.category_id) ?? 0) + 1));
+    const q = query.trim().toLowerCase();
+    return categories
+      .filter((c) => !q || c.name.toLowerCase().includes(q))
+      .map((c) => ({ ...c, serviceCount: counts.get(c.id) ?? 0 }));
+  }, [categories, services, query]);
+
+  const goBack = () => {
+    if (activeProvider) return setActiveProvider(null);
+    if (activeCat) return setActiveCat(null);
+    navigate("/");
+  };
 
   const openBooking = (s: UtilityService) => {
     if (!user) {
@@ -93,44 +152,146 @@ const UtilityServices = () => {
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-40 border-b bg-primary">
         <div className="container flex items-center gap-3 py-3">
-          <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={goBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <Wrench className="h-5 w-5 text-primary-foreground" />
-            <h1 className="text-lg font-bold text-primary-foreground">Utility Services</h1>
+            <h1 className="truncate text-lg font-bold text-primary-foreground">
+              {selectedSupplier ? selectedSupplier.name : activeCat ? activeCat.name : "Utility Services"}
+            </h1>
           </div>
         </div>
       </header>
 
       <main className="container py-5">
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search utility services..." value={query} onChange={(e) => setQuery(e.target.value)} />
-        </div>
-
-        {categories.length > 0 && (
-          <div className="mb-5 flex gap-2 overflow-x-auto pb-2">
-            <Button variant={activeCat === "all" ? "default" : "outline"} size="sm" onClick={() => setActiveCat("all")}>All</Button>
-            {categories.map((c) => (
-              <Button key={c.id} variant={activeCat === c.id ? "default" : "outline"} size="sm" className="shrink-0" onClick={() => setActiveCat(c.id)}>
-                {c.name}
-              </Button>
-            ))}
+        {(activeCat || selectedSupplier) && (
+          <div className="mb-3 flex items-center gap-1 text-sm text-muted-foreground">
+            <button className="hover:text-foreground" onClick={() => { setActiveCat(null); setActiveProvider(null); }}>Categories</button>
+            {activeCat && (
+              <>
+                <ChevronRight className="h-3 w-3" />
+                <button className="hover:text-foreground" onClick={() => setActiveProvider(null)}>{activeCat.name}</button>
+              </>
+            )}
+            {selectedSupplier && (
+              <>
+                <ChevronRight className="h-3 w-3" />
+                <span className="text-foreground">{selectedSupplier.name}</span>
+              </>
+            )}
           </div>
         )}
 
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder={activeCat ? "Search suppliers or services..." : "Search categories..."}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+
         {loading ? (
           <p className="text-center text-muted-foreground">Loading services...</p>
-        ) : visible.length === 0 ? (
+        ) : !activeCat ? (
+          filteredCategories.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-16">
+              <Wrench className="h-12 w-12 text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground">No categories yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {filteredCategories.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { setActiveCat(c); setActiveProvider(null); setQuery(""); }}
+                  className="group flex flex-col overflow-hidden rounded-xl border bg-card text-left transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
+                >
+                  {c.image_url ? (
+                    <img src={c.image_url} alt={c.name} loading="lazy" className="h-28 w-full object-cover" />
+                  ) : (
+                    <div className="flex h-28 w-full items-center justify-center bg-primary/10">
+                      <Wrench className="h-8 w-8 text-primary" />
+                    </div>
+                  )}
+                  <div className="space-y-1 p-3">
+                    <h2 className="line-clamp-1 font-semibold text-foreground">{c.name}</h2>
+                    {c.description && <p className="line-clamp-2 text-xs text-muted-foreground">{c.description}</p>}
+                    <p className="text-xs font-medium text-primary">{c.serviceCount} listing{c.serviceCount === 1 ? "" : "s"}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
+        ) : !selectedSupplier ? (
+          catSuppliers.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-16">
+              <Building2 className="h-12 w-12 text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground">No suppliers in this category yet</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {catSuppliers.map((g) => (
+                <button
+                  key={g.key}
+                  onClick={() => { setActiveProvider(g.key); setQuery(""); }}
+                  className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md"
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Building2 className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate font-semibold text-foreground">{g.name}</h2>
+                    <p className="text-xs text-muted-foreground">
+                      {g.items.length} service{g.items.length === 1 ? "" : "s"} available
+                    </p>
+                    {(g.info?.local_body_name || g.info?.business_address) && (
+                      <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {g.info?.local_body_name
+                          ? `${g.info.local_body_name}${g.info.ward_number ? ` · Ward ${g.info.ward_number}` : ""}`
+                          : g.info?.business_address}
+                      </p>
+                    )}
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          )
+        ) : selectedSupplier.items.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-16">
-            <Wrench className="h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium text-muted-foreground">No utility services yet</p>
-            <p className="text-sm text-muted-foreground">We're onboarding outside service partners. Stay tuned.</p>
+            <Package className="h-12 w-12 text-muted-foreground" />
+            <p className="text-lg font-medium text-muted-foreground">No listings from this supplier yet</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visible.map((s) => (
+          <>
+            {selectedSupplier.info && (
+              <Card className="mb-4">
+                <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
+                  <div className="flex items-center gap-2 font-semibold text-foreground">
+                    <Building2 className="h-4 w-4 text-primary" />{selectedSupplier.name}
+                  </div>
+                  {selectedSupplier.info.local_body_name && (
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <MapPin className="h-3 w-3" />{selectedSupplier.info.local_body_name}
+                      {selectedSupplier.info.ward_number ? ` · Ward ${selectedSupplier.info.ward_number}` : ""}
+                    </span>
+                  )}
+                  {selectedSupplier.info.mobile_number && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={`tel:${selectedSupplier.info.mobile_number}`}>
+                        <Phone className="mr-1 h-3 w-3" />Call supplier
+                      </a>
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {selectedSupplier.items.map((s) => (
               <Card key={s.id} className="overflow-hidden transition-shadow hover:shadow-md">
                 {s.image_url && <img src={s.image_url} alt={s.name} className="h-36 w-full object-cover" loading="lazy" />}
                 <CardContent className="space-y-2 p-4">
@@ -153,7 +314,8 @@ const UtilityServices = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </main>
 
