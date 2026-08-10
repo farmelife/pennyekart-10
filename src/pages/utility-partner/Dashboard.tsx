@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Wrench, LogOut, Phone, Home, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Wrench, LogOut, Phone, Home, Package, Check, CheckCircle2, Bell } from "lucide-react";
 import VariantManager from "@/components/utility/VariantManager";
 import {
   PRICE_UNITS, REQUEST_STATUSES, formatServicePrice, statusLabel, unitsForCategoryType,
@@ -36,6 +36,8 @@ const UtilityPartnerDashboard = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [packsFor, setPacksFor] = useState<UtilityService | null>(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const prevPendingRef = useRef(-1);
 
   const isProductService = (s: UtilityService) =>
     categories.find((c) => c.id === s.category_id)?.category_type === "product";
@@ -64,6 +66,26 @@ const UtilityPartnerDashboard = () => {
   };
 
   useEffect(() => { fetchAll(); }, [profile?.user_id]);
+
+  // Poll + realtime so new requests pop up immediately
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    const interval = setInterval(fetchAll, 30000);
+    const channel = supabase
+      .channel(`utility-requests-${profile.user_id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "utility_service_requests" }, () => fetchAll())
+      .subscribe();
+    return () => { clearInterval(interval); supabase.removeChannel(channel); };
+  }, [profile?.user_id, services.length]);
+
+  // Popup when a new pending request arrives
+  useEffect(() => {
+    const count = requests.filter((r) => r.status === "pending").length;
+    if (count > prevPendingRef.current && prevPendingRef.current !== -1) setAlertOpen(true);
+    if (prevPendingRef.current === -1 && count > 0) setAlertOpen(true);
+    prevPendingRef.current = count;
+  }, [requests]);
+
 
   const save = async () => {
     if (!profile?.user_id) return;
@@ -254,10 +276,23 @@ const UtilityPartnerDashboard = () => {
                   )}
                   {r.preferred_date && <p className="text-xs text-muted-foreground">Preferred: {r.preferred_date}</p>}
                   {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
-                  <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
-                    <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                    <SelectContent>{REQUEST_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {r.status === "pending" && (
+                      <Button size="sm" onClick={() => setRequestStatus(r.id, "assigned")}>
+                        <Check className="mr-1.5 h-3.5 w-3.5" /> Accept
+                      </Button>
+                    )}
+                    {["assigned", "in_progress"].includes(r.status) && (
+                      <Button size="sm" onClick={() => setRequestStatus(r.id, "completed")}>
+                        <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Finish
+                      </Button>
+                    )}
+                    <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
+                      <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                      <SelectContent>{REQUEST_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+
                 </CardContent>
               </Card>
             ))}
@@ -273,7 +308,55 @@ const UtilityPartnerDashboard = () => {
           onOpenChange={(v) => !v && setPacksFor(null)}
         />
       )}
+
+      {/* New request popup */}
+      <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              New requests ({pending})
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {requests.filter((r) => r.status === "pending").map((r) => (
+              <div key={r.id} className="space-y-1 rounded-lg border bg-accent/30 p-3">
+                <p className="font-semibold">{r.contact_name}</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" />{r.contact_phone}</p>
+                <p className="text-xs text-muted-foreground">{serviceName(r.service_id)}</p>
+                {r.variant_label && (
+                  <p className="text-sm font-medium text-primary">
+                    {r.variant_label} × {r.quantity ?? 1}{r.total_amount ? ` = ₹${Number(r.total_amount)}` : ""}
+                  </p>
+                )}
+                {r.address && <p className="text-sm">{r.address}</p>}
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" className="flex-1" onClick={() => setRequestStatus(r.id, "assigned")}>
+                    <Check className="mr-1.5 h-3.5 w-3.5" /> Accept
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setAlertOpen(false)}>Later</Button>
+                </div>
+              </div>
+            ))}
+            {pending === 0 && <p className="py-6 text-center text-muted-foreground">No pending requests</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Floating bell */}
+      {pending > 0 && !alertOpen && (
+        <button
+          onClick={() => setAlertOpen(true)}
+          className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+        >
+          <Bell className="h-6 w-6" />
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+            {pending}
+          </span>
+        </button>
+      )}
     </div>
+
   );
 };
 
