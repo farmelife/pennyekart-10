@@ -36,6 +36,8 @@ const UtilityPartnerDashboard = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [packsFor, setPacksFor] = useState<UtilityService | null>(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const prevPendingRef = useRef(-1);
 
   const isProductService = (s: UtilityService) =>
     categories.find((c) => c.id === s.category_id)?.category_type === "product";
