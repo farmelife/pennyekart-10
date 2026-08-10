@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Wrench, MapPin, Phone, Search, Building2, ChevronRight, Package } from "lucide-react";
-import { formatServicePrice, type UtilityCategory, type UtilityService } from "@/lib/utilityServices";
+import { ArrowLeft, Wrench, MapPin, Phone, Search, Building2, ChevronRight, Package, Minus, Plus, ShoppingCart } from "lucide-react";
+import { formatServicePrice, type UtilityCategory, type UtilityService, type UtilityVariant } from "@/lib/utilityServices";
 
 interface ProviderInfo {
   provider_user_id: string;
@@ -36,6 +36,9 @@ const UtilityServices = () => {
   const [booking, setBooking] = useState<UtilityService | null>(null);
   const [form, setForm] = useState({ contact_name: "", contact_phone: "", address: "", preferred_date: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [variants, setVariants] = useState<UtilityVariant[]>([]);
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [qty, setQty] = useState(1);
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -54,6 +57,31 @@ const UtilityServices = () => {
     };
     load();
   }, []);
+
+  const isProductCat = activeCat?.category_type === "product";
+
+  // Packs for the listing being ordered
+  useEffect(() => {
+    const loadVariants = async () => {
+      if (!booking) { setVariants([]); setVariantId(null); return; }
+      const { data } = await supabase
+        .from("utility_service_variants")
+        .select("*")
+        .eq("service_id", booking.id)
+        .eq("is_active", true)
+        .order("sort_order")
+        .order("pack_size");
+      const list = (data as UtilityVariant[]) ?? [];
+      setVariants(list);
+      setVariantId(list[0]?.id ?? null);
+      setQty(1);
+    };
+    loadVariants();
+  }, [booking]);
+
+  const selectedVariant = variants.find((v) => v.id === variantId) ?? null;
+  const unitPrice = selectedVariant ? Number(selectedVariant.price) : Number(booking?.price ?? 0);
+  const orderTotal = unitPrice * qty;
 
   const providerMap = useMemo(() => {
     const m = new Map<string, ProviderInfo>();
@@ -129,6 +157,10 @@ const UtilityServices = () => {
       toast({ title: "Enter your name and a valid 10-digit phone", variant: "destructive" });
       return;
     }
+    if (variants.length > 0 && !selectedVariant) {
+      toast({ title: "Please choose a pack", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from("utility_service_requests").insert({
       service_id: booking.id,
@@ -138,12 +170,20 @@ const UtilityServices = () => {
       address: form.address || null,
       preferred_date: form.preferred_date || null,
       notes: form.notes || null,
+      variant_id: selectedVariant?.id ?? null,
+      variant_label: selectedVariant?.label ?? null,
+      quantity: qty,
+      unit_price: unitPrice || null,
+      total_amount: orderTotal || null,
     });
     setSubmitting(false);
     if (error) {
       toast({ title: "Could not send request", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Request sent!", description: "The service provider will contact you shortly." });
+      toast({
+        title: variants.length ? "Order placed!" : "Request sent!",
+        description: "The supplier will contact you shortly.",
+      });
       setBooking(null);
     }
   };

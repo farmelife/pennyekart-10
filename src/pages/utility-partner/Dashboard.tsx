@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Wrench, LogOut, Phone, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Wrench, LogOut, Phone, Home, Package } from "lucide-react";
+import VariantManager from "@/components/utility/VariantManager";
 import {
   PRICE_UNITS, REQUEST_STATUSES, formatServicePrice, statusLabel, unitsForCategoryType,
   type UtilityCategory, type UtilityService, type UtilityRequest,
@@ -34,6 +35,10 @@ const UtilityPartnerDashboard = () => {
   const [form, setForm] = useState(emptyService);
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [packsFor, setPacksFor] = useState<UtilityService | null>(null);
+
+  const isProductService = (s: UtilityService) =>
+    categories.find((c) => c.id === s.category_id)?.category_type === "product";
 
   const selectedCategory = categories.find((c) => c.id === form.category_id);
   const unitOptions = form.category_id ? unitsForCategoryType(selectedCategory?.category_type) : PRICE_UNITS;
@@ -210,6 +215,11 @@ const UtilityPartnerDashboard = () => {
                         <div className="mt-2 flex items-center gap-2">
                           <Switch checked={s.is_active} onCheckedChange={(v) => toggleActive(s.id, v)} />
                           <span className="text-xs text-muted-foreground">Active</span>
+                          {isProductService(s) && (
+                            <Button variant="outline" size="sm" onClick={() => setPacksFor(s)}>
+                              <Package className="mr-1 h-3.5 w-3.5" /> Packs
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button>
                           <Button variant="ghost" size="sm" onClick={() => remove(s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                         </div>
@@ -236,6 +246,12 @@ const UtilityPartnerDashboard = () => {
                     <Badge variant="outline">{statusLabel(r.status)}</Badge>
                   </div>
                   {r.address && <p className="text-sm">{r.address}</p>}
+                  {r.variant_label && (
+                    <p className="text-sm font-medium text-primary">
+                      {r.variant_label} × {r.quantity ?? 1}
+                      {r.total_amount ? ` = ₹${Number(r.total_amount)}` : ""}
+                    </p>
+                  )}
                   {r.preferred_date && <p className="text-xs text-muted-foreground">Preferred: {r.preferred_date}</p>}
                   {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
                   <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
@@ -248,6 +264,15 @@ const UtilityPartnerDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {packsFor && (
+        <VariantManager
+          serviceId={packsFor.id}
+          serviceName={packsFor.name}
+          open={!!packsFor}
+          onOpenChange={(v) => !v && setPacksFor(null)}
+        />
+      )}
     </div>
   );
 };
