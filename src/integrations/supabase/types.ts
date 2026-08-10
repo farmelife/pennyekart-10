@@ -2342,6 +2342,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_utility_providers: {
+        Args: never
+        Returns: {
+          business_address: string
+          company_name: string
+          display_name: string
+          local_body_name: string
+          mobile_number: string
+          provider_user_id: string
+          ward_number: number
+        }[]
+      }
       has_permission: { Args: { _permission_name: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
     }
