@@ -804,7 +804,7 @@ const SellingPartnerDashboard = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {otherOrders.map(o => {
+                          {list.map(o => {
                             const myItems = Array.isArray(o.items) ? o.items.filter((item: any) => products.some(p => p.id === item.id)) : [];
                             const isSelfDelivery = (o as any).is_self_delivery === true;
                             const selfDeliveryNextStatus = (() => {
