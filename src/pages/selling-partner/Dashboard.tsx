@@ -20,6 +20,7 @@ import ImageUpload from "@/components/admin/ImageUpload";
 import ProductVariants from "@/components/admin/ProductVariants";
 import logo from "@/assets/logo.png";
 import NewOrderNotification from "@/components/NewOrderNotification";
+import PartnerAvatar from "@/components/partner/PartnerAvatar";
 
 interface SellerProduct {
   id: string;
@@ -462,6 +463,7 @@ const SellingPartnerDashboard = () => {
           <span className="font-semibold text-foreground">Selling Partner</span>
         </div>
         <div className="flex items-center gap-2">
+          <PartnerAvatar />
           <Button
             size="sm"
             variant={available ? "default" : "outline"}

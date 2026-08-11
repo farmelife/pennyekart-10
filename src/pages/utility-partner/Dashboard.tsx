@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Wrench, LogOut, Phone, Home, Package, Check, CheckCircle2, Bell } from "lucide-react";
 import VariantManager from "@/components/utility/VariantManager";
+import PartnerAvatar from "@/components/partner/PartnerAvatar";
 import {
   PRICE_UNITS, REQUEST_STATUSES, formatServicePrice, statusLabel, unitsForCategoryType,
   type UtilityCategory, type UtilityService, type UtilityRequest,
@@ -205,6 +206,7 @@ const UtilityPartnerDashboard = () => {
             <h1 className="text-base font-bold text-primary-foreground sm:text-lg">Utility Partner Dashboard</h1>
           </div>
           <div className="flex items-center gap-2">
+            <PartnerAvatar />
             <div className="flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1">
               <Switch checked={available} onCheckedChange={toggleAvailability} />
               <span className="text-xs font-medium text-primary-foreground">{available ? "Available" : "Busy"}</span>
