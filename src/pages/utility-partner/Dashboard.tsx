@@ -37,7 +37,9 @@ const UtilityPartnerDashboard = () => {
   const [open, setOpen] = useState(false);
   const [packsFor, setPacksFor] = useState<UtilityService | null>(null);
   const [alertOpen, setAlertOpen] = useState(false);
-  const prevPendingRef = useRef(-1);
+  const [available, setAvailable] = useState<boolean>((profile as any)?.is_available ?? true);
+  useEffect(() => { setAvailable((profile as any)?.is_available ?? true); }, [(profile as any)?.is_available]);
+
 
   const isProductService = (s: UtilityService) =>
     categories.find((c) => c.id === s.category_id)?.category_type === "product";
