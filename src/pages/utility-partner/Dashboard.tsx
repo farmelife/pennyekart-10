@@ -39,6 +39,8 @@ const UtilityPartnerDashboard = () => {
   const [alertOpen, setAlertOpen] = useState(false);
   const [available, setAvailable] = useState<boolean>((profile as any)?.is_available ?? true);
   useEffect(() => { setAvailable((profile as any)?.is_available ?? true); }, [(profile as any)?.is_available]);
+  const prevPendingRef = useRef(-1);
+
 
 
   const isProductService = (s: UtilityService) =>
