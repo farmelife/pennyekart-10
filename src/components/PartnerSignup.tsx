@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Camera, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +46,9 @@ const PartnerSignup = ({ userType, title, description, sellerType, loginPath: lo
   const [districtId, setDistrictId] = useState("");
   const [localBodyId, setLocalBodyId] = useState("");
   const [wardNumber, setWardNumber] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [districts, setDistricts] = useState<District[]>([]);
   const [localBodies, setLocalBodies] = useState<LocalBody[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,8 +107,20 @@ const PartnerSignup = ({ userType, title, description, sellerType, loginPath: lo
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
-      if (sellerType && signUpData.user) {
-        await supabase.from("profiles").update({ seller_type: sellerType }).eq("user_id", signUpData.user.id);
+      const updates: Record<string, string> = {};
+      if (sellerType) updates.seller_type = sellerType;
+
+      if (avatarFile && signUpData.user) {
+        const path = `avatars/${signUpData.user.id}-${Date.now()}.${avatarFile.name.split(".").pop()}`;
+        const { error: upErr } = await supabase.storage.from("products").upload(path, avatarFile, { upsert: true });
+        if (!upErr) {
+          const { data: pub } = supabase.storage.from("products").getPublicUrl(path);
+          updates.avatar_url = pub.publicUrl;
+        }
+      }
+
+      if (signUpData.user && Object.keys(updates).length) {
+        await supabase.from("profiles").update(updates).eq("user_id", signUpData.user.id);
       }
       await supabase.auth.signOut();
       toast({ title: "Registration successful!", description: "Your account is pending admin approval." });
@@ -125,6 +141,47 @@ const PartnerSignup = ({ userType, title, description, sellerType, loginPath: lo
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative">
+                <Avatar className="h-20 w-20 border border-border">
+                  {avatarPreview && <AvatarImage src={avatarPreview} alt="Profile preview" />}
+                  <AvatarFallback className="text-lg">
+                    {fullName.trim() ? fullName.trim().charAt(0).toUpperCase() : <Camera className="h-6 w-6" />}
+                  </AvatarFallback>
+                </Avatar>
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    onClick={() => { setAvatarFile(null); setAvatarPreview(""); }}
+                    className="absolute -right-1 -top-1 rounded-full border border-border bg-background p-1 shadow"
+                    aria-label="Remove profile picture"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => avatarInputRef.current?.click()}>
+                <Camera className="mr-2 h-4 w-4" />
+                {avatarPreview ? "Change photo" : "Add profile picture"}
+              </Button>
+              <p className="text-xs text-muted-foreground">Optional</p>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 2 * 1024 * 1024) {
+                    toast({ title: "Image too large", description: "Please choose an image under 2MB", variant: "destructive" });
+                    return;
+                  }
+                  setAvatarFile(file);
+                  setAvatarPreview(URL.createObjectURL(file));
+                }}
+              />
+            </div>
             <div>
               <Label htmlFor="fullName">Full Name</Label>
               <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={100} />
