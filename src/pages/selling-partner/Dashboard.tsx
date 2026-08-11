@@ -94,6 +94,7 @@ const SellingPartnerDashboard = () => {
   const [editForm, setEditForm] = useState(emptyForm);
   const [form, setForm] = useState(emptyForm);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [available, setAvailable] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState<WalletTxn[]>([]);
   const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
