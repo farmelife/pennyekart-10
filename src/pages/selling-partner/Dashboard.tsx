@@ -827,7 +827,7 @@ const SellingPartnerDashboard = () => {
                   )}
 
                   {(() => {
-                    const activeOrders = otherOrders.filter(o => !["delivered", "cancelled", "return_confirmed"].includes(o.status));
+                    const activeOrders = orders.filter(o => !["delivered", "cancelled", "return_confirmed"].includes(o.status));
                     const deliveredList = otherOrders.filter(o => o.status === "delivered");
                     const cancelledList = otherOrders.filter(o => ["cancelled", "return_confirmed"].includes(o.status));
                     const renderTable = (list: typeof otherOrders) => (
