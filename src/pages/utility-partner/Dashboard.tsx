@@ -37,7 +37,11 @@ const UtilityPartnerDashboard = () => {
   const [open, setOpen] = useState(false);
   const [packsFor, setPacksFor] = useState<UtilityService | null>(null);
   const [alertOpen, setAlertOpen] = useState(false);
+  const [available, setAvailable] = useState<boolean>((profile as any)?.is_available ?? true);
+  useEffect(() => { setAvailable((profile as any)?.is_available ?? true); }, [(profile as any)?.is_available]);
   const prevPendingRef = useRef(-1);
+
+
 
   const isProductService = (s: UtilityService) =>
     categories.find((c) => c.id === s.category_id)?.category_type === "product";
@@ -138,6 +142,59 @@ const UtilityPartnerDashboard = () => {
 
   const serviceName = (id: string) => services.find((s) => s.id === id)?.name ?? "—";
   const pending = requests.filter((r) => r.status === "pending").length;
+  const OPEN_STATUSES = ["pending", "assigned", "in_progress", "quoted"];
+  const openRequests = requests.filter((r) => OPEN_STATUSES.includes(r.status));
+  const closedRequests = requests.filter((r) => !OPEN_STATUSES.includes(r.status));
+
+  const toggleAvailability = async (v: boolean) => {
+    if (!profile?.user_id) return;
+    setAvailable(v);
+    const { error } = await supabase.from("profiles").update({ is_available: v }).eq("user_id", profile.user_id);
+    if (error) { setAvailable(!v); toast({ title: "Error", description: error.message, variant: "destructive" }); }
+    else toast({ title: v ? "You're now Available" : "You're now Busy" });
+  };
+
+  const renderRequest = (r: UtilityRequest) => (
+    <Card key={r.id}>
+      <CardContent className="space-y-2 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="font-semibold">{r.contact_name}</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" />{r.contact_phone}</p>
+            <p className="text-xs text-muted-foreground">{serviceName(r.service_id)}</p>
+          </div>
+          <Badge variant="outline">{statusLabel(r.status)}</Badge>
+        </div>
+        {r.address && <p className="text-sm">{r.address}</p>}
+        {r.variant_label && (
+          <p className="text-sm font-medium text-primary">
+            {r.variant_label} × {r.quantity ?? 1}
+            {r.total_amount ? ` = ₹${Number(r.total_amount)}` : ""}
+          </p>
+        )}
+        {r.preferred_date && <p className="text-xs text-muted-foreground">Preferred: {r.preferred_date}</p>}
+        {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {r.status === "pending" && (
+            <Button size="sm" onClick={() => setRequestStatus(r.id, "assigned")}>
+              <Check className="mr-1.5 h-3.5 w-3.5" /> Accept
+            </Button>
+          )}
+          {["assigned", "in_progress"].includes(r.status) && (
+            <Button size="sm" onClick={() => setRequestStatus(r.id, "completed")}>
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Finish
+            </Button>
+          )}
+          <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>{REQUEST_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -147,7 +204,12 @@ const UtilityPartnerDashboard = () => {
             <Wrench className="h-5 w-5 text-primary-foreground" />
             <h1 className="text-base font-bold text-primary-foreground sm:text-lg">Utility Partner Dashboard</h1>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1">
+              <Switch checked={available} onCheckedChange={toggleAvailability} />
+              <span className="text-xs font-medium text-primary-foreground">{available ? "Available" : "Busy"}</span>
+            </div>
+
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => navigate("/")}>
               <Home className="h-4 w-4" />
             </Button>
@@ -253,50 +315,25 @@ const UtilityPartnerDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="requests" className="mt-4 space-y-3">
-            {requests.length === 0 ? (
-              <Card><CardContent className="py-10 text-center text-muted-foreground">No customer requests yet</CardContent></Card>
-            ) : requests.map((r) => (
-              <Card key={r.id}>
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold">{r.contact_name}</p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" />{r.contact_phone}</p>
-                      <p className="text-xs text-muted-foreground">{serviceName(r.service_id)}</p>
-                    </div>
-                    <Badge variant="outline">{statusLabel(r.status)}</Badge>
-                  </div>
-                  {r.address && <p className="text-sm">{r.address}</p>}
-                  {r.variant_label && (
-                    <p className="text-sm font-medium text-primary">
-                      {r.variant_label} × {r.quantity ?? 1}
-                      {r.total_amount ? ` = ₹${Number(r.total_amount)}` : ""}
-                    </p>
-                  )}
-                  {r.preferred_date && <p className="text-xs text-muted-foreground">Preferred: {r.preferred_date}</p>}
-                  {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {r.status === "pending" && (
-                      <Button size="sm" onClick={() => setRequestStatus(r.id, "assigned")}>
-                        <Check className="mr-1.5 h-3.5 w-3.5" /> Accept
-                      </Button>
-                    )}
-                    {["assigned", "in_progress"].includes(r.status) && (
-                      <Button size="sm" onClick={() => setRequestStatus(r.id, "completed")}>
-                        <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Finish
-                      </Button>
-                    )}
-                    <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
-                      <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                      <SelectContent>{REQUEST_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-
-                </CardContent>
-              </Card>
-            ))}
+          <TabsContent value="requests" className="mt-4">
+            <Tabs defaultValue="pending">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pending">Pending ({openRequests.length})</TabsTrigger>
+                <TabsTrigger value="completed">Completed ({closedRequests.length})</TabsTrigger>
+              </TabsList>
+              <TabsContent value="pending" className="mt-3 space-y-3">
+                {openRequests.length === 0 ? (
+                  <Card><CardContent className="py-10 text-center text-muted-foreground">No pending requests</CardContent></Card>
+                ) : openRequests.map(renderRequest)}
+              </TabsContent>
+              <TabsContent value="completed" className="mt-3 space-y-3">
+                {closedRequests.length === 0 ? (
+                  <Card><CardContent className="py-10 text-center text-muted-foreground">Nothing completed yet</CardContent></Card>
+                ) : closedRequests.map(renderRequest)}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
+
         </Tabs>
       </main>
 
