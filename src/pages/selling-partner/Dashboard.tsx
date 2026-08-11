@@ -939,17 +939,17 @@ const SellingPartnerDashboard = () => {
                   );
 
                   return (
-                    <Tabs defaultValue="active">
+                    <Tabs defaultValue="pending">
                       <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="active">Active ({activeOrders.length})</TabsTrigger>
-                        <TabsTrigger value="delivered">Delivered ({deliveredList.length})</TabsTrigger>
-                        <TabsTrigger value="cancelled">Cancelled ({cancelledList.length})</TabsTrigger>
+                        <TabsTrigger value="pending" className="gap-1"><Clock className="h-3.5 w-3.5" />Pending ({activeOrders.length})</TabsTrigger>
+                        <TabsTrigger value="completed" className="gap-1"><CheckCircle className="h-3.5 w-3.5" />Completed ({deliveredList.length})</TabsTrigger>
+                        <TabsTrigger value="cancelled" className="gap-1"><XCircle className="h-3.5 w-3.5" />Cancelled ({cancelledList.length})</TabsTrigger>
                       </TabsList>
-                      <TabsContent value="active">
-                        {activeOrders.length ? renderTable(activeOrders) : <p className="text-muted-foreground text-center py-8">No active orders</p>}
+                      <TabsContent value="pending">
+                        {activeOrders.length ? renderTable(activeOrders) : <p className="text-muted-foreground text-center py-8">No pending orders</p>}
                       </TabsContent>
-                      <TabsContent value="delivered">
-                        {deliveredList.length ? renderTable(deliveredList) : <p className="text-muted-foreground text-center py-8">No delivered orders</p>}
+                      <TabsContent value="completed">
+                        {deliveredList.length ? renderTable(deliveredList) : <p className="text-muted-foreground text-center py-8">No completed orders</p>}
                       </TabsContent>
                       <TabsContent value="cancelled">
                         {cancelledList.length ? renderTable(cancelledList) : <p className="text-muted-foreground text-center py-8">No cancelled orders</p>}
