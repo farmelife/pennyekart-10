@@ -301,6 +301,10 @@ const SellingPartnerDashboard = () => {
   };
 
   useEffect(() => {
+    if (profile) setAvailable((profile as any).is_available !== false);
+  }, [profile]);
+
+  useEffect(() => {
     if (!user || !profile) return;
     const init = async () => {
       await Promise.all([fetchAssignedGodowns(), fetchCategories(), fetchWallet(), fetchProfileSettings()]);
