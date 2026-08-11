@@ -204,7 +204,12 @@ const UtilityPartnerDashboard = () => {
             <Wrench className="h-5 w-5 text-primary-foreground" />
             <h1 className="text-base font-bold text-primary-foreground sm:text-lg">Utility Partner Dashboard</h1>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1">
+              <Switch checked={available} onCheckedChange={toggleAvailability} />
+              <span className="text-xs font-medium text-primary-foreground">{available ? "Available" : "Busy"}</span>
+            </div>
+
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => navigate("/")}>
               <Home className="h-4 w-4" />
             </Button>
