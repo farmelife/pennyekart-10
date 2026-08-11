@@ -1439,6 +1439,7 @@ export type Database = {
           gst_number: string | null
           id: string
           is_approved: boolean
+          is_available: boolean
           is_blocked: boolean
           is_super_admin: boolean
           last_login_at: string | null
@@ -1476,6 +1477,7 @@ export type Database = {
           gst_number?: string | null
           id?: string
           is_approved?: boolean
+          is_available?: boolean
           is_blocked?: boolean
           is_super_admin?: boolean
           last_login_at?: string | null
@@ -1513,6 +1515,7 @@ export type Database = {
           gst_number?: string | null
           id?: string
           is_approved?: boolean
+          is_available?: boolean
           is_blocked?: boolean
           is_super_admin?: boolean
           last_login_at?: string | null
