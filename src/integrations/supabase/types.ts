@@ -2423,6 +2423,7 @@ export type Database = {
       get_utility_providers: {
         Args: never
         Returns: {
+          avatar_url: string
           business_address: string
           company_name: string
           display_name: string
