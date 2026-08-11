@@ -434,6 +434,21 @@ const SellingPartnerDashboard = () => {
   const totalSettled = transactions.filter(t => t.type === "settlement" || t.description?.toLowerCase().includes("settl")).reduce((s, t) => s + Math.abs(t.amount), 0);
   const walletRevenue = totalCredits - totalSettled;
 
+  const pendingCount = orders.filter(o => !["delivered", "cancelled", "return_confirmed"].includes(o.status)).length;
+
+  const toggleAvailability = async () => {
+    if (!profile?.user_id) return;
+    const next = !available;
+    setAvailable(next);
+    const { error } = await supabase.from("profiles").update({ is_available: next } as any).eq("user_id", profile.user_id);
+    if (error) {
+      setAvailable(!next);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: next ? "You're now Available" : "You're marked Busy" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between border-b bg-card px-4 py-3">
@@ -441,13 +456,33 @@ const SellingPartnerDashboard = () => {
           <img src={logo} alt="Pennyekart" className="h-8" />
           <span className="font-semibold text-foreground">Selling Partner</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{profile?.full_name}</span>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={available ? "default" : "outline"}
+            onClick={toggleAvailability}
+            className={available ? "" : "text-muted-foreground"}
+          >
+            {available ? <CircleDot className="mr-1.5 h-4 w-4" /> : <PauseCircle className="mr-1.5 h-4 w-4" />}
+            {available ? "Available" : "Busy"}
+          </Button>
+          <span className="hidden text-sm text-muted-foreground sm:inline">{profile?.full_name}</span>
           <Button variant="outline" size="sm" onClick={signOut}><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 
       <main className="mx-auto max-w-4xl p-4 space-y-6">
+        {/* Greeting */}
+        <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/70 p-5 text-primary-foreground">
+          <p className="text-sm opacity-90">Hi {profile?.full_name?.split(" ")[0] || "Partner"} 👋</p>
+          <h2 className="text-xl font-bold">
+            {pendingCount > 0 ? `${pendingCount} order${pendingCount > 1 ? "s" : ""} need your attention` : "All orders are up to date"}
+          </h2>
+          <p className="mt-1 text-xs opacity-90">
+            Status: {available ? "Available for new orders" : "Busy — new orders may be delayed"}
+          </p>
+        </div>
+
         {/* Stats */}
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
           <Card>
@@ -466,19 +501,20 @@ const SellingPartnerDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Orders</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+              <Clock className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent><p className="text-2xl font-bold">{orders.length}</p></CardContent>
+            <CardContent><p className="text-2xl font-bold">{pendingCount}</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Wallet</CardTitle>
-              <Wallet className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+              <CheckCircle className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent><p className="text-2xl font-bold">₹{walletBalance.toFixed(2)}</p></CardContent>
+            <CardContent><p className="text-2xl font-bold">{deliveredOrders.length}</p></CardContent>
           </Card>
         </div>
+
 
         <Tabs defaultValue="products">
           <TabsList className="w-full grid grid-cols-6">
