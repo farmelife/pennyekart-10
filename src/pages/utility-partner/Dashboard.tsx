@@ -138,6 +138,59 @@ const UtilityPartnerDashboard = () => {
 
   const serviceName = (id: string) => services.find((s) => s.id === id)?.name ?? "—";
   const pending = requests.filter((r) => r.status === "pending").length;
+  const OPEN_STATUSES = ["pending", "assigned", "in_progress", "quoted"];
+  const openRequests = requests.filter((r) => OPEN_STATUSES.includes(r.status));
+  const closedRequests = requests.filter((r) => !OPEN_STATUSES.includes(r.status));
+
+  const toggleAvailability = async (v: boolean) => {
+    if (!profile?.user_id) return;
+    setAvailable(v);
+    const { error } = await supabase.from("profiles").update({ is_available: v }).eq("user_id", profile.user_id);
+    if (error) { setAvailable(!v); toast({ title: "Error", description: error.message, variant: "destructive" }); }
+    else toast({ title: v ? "You're now Available" : "You're now Busy" });
+  };
+
+  const renderRequest = (r: UtilityRequest) => (
+    <Card key={r.id}>
+      <CardContent className="space-y-2 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="font-semibold">{r.contact_name}</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" />{r.contact_phone}</p>
+            <p className="text-xs text-muted-foreground">{serviceName(r.service_id)}</p>
+          </div>
+          <Badge variant="outline">{statusLabel(r.status)}</Badge>
+        </div>
+        {r.address && <p className="text-sm">{r.address}</p>}
+        {r.variant_label && (
+          <p className="text-sm font-medium text-primary">
+            {r.variant_label} × {r.quantity ?? 1}
+            {r.total_amount ? ` = ₹${Number(r.total_amount)}` : ""}
+          </p>
+        )}
+        {r.preferred_date && <p className="text-xs text-muted-foreground">Preferred: {r.preferred_date}</p>}
+        {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {r.status === "pending" && (
+            <Button size="sm" onClick={() => setRequestStatus(r.id, "assigned")}>
+              <Check className="mr-1.5 h-3.5 w-3.5" /> Accept
+            </Button>
+          )}
+          {["assigned", "in_progress"].includes(r.status) && (
+            <Button size="sm" onClick={() => setRequestStatus(r.id, "completed")}>
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Finish
+            </Button>
+          )}
+          <Select value={r.status} onValueChange={(v) => setRequestStatus(r.id, v)}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>{REQUEST_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+
 
   return (
     <div className="min-h-screen bg-muted/40">
