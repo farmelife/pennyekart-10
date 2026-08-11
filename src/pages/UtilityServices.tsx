@@ -21,6 +21,7 @@ interface ProviderInfo {
   business_address: string | null;
   local_body_name: string | null;
   ward_number: number | null;
+  avatar_url?: string | null;
 }
 
 const DIRECT_KEY = "__direct__";
@@ -275,9 +276,18 @@ const UtilityServices = () => {
                   onClick={() => { setActiveProvider(g.key); setQuery(""); }}
                   className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Building2 className="h-6 w-6" />
-                  </div>
+                  {g.info?.avatar_url ? (
+                    <img
+                      src={g.info.avatar_url}
+                      alt={g.name}
+                      loading="lazy"
+                      className="h-12 w-12 shrink-0 rounded-full border border-border object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Building2 className="h-6 w-6" />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <h2 className="truncate font-semibold text-foreground">{g.name}</h2>
                     <p className="text-xs text-muted-foreground">
@@ -308,7 +318,16 @@ const UtilityServices = () => {
               <Card className="mb-4">
                 <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
                   <div className="flex items-center gap-2 font-semibold text-foreground">
-                    <Building2 className="h-4 w-4 text-primary" />{selectedSupplier.name}
+                    {selectedSupplier.info.avatar_url ? (
+                      <img
+                        src={selectedSupplier.info.avatar_url}
+                        alt={selectedSupplier.name}
+                        className="h-8 w-8 rounded-full border border-border object-cover"
+                      />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-primary" />
+                    )}
+                    {selectedSupplier.name}
                   </div>
                   {selectedSupplier.info.local_body_name && (
                     <span className="flex items-center gap-1 text-muted-foreground">
