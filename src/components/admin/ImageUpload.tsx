@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, ImageDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ImageUploadProps {
@@ -11,13 +11,25 @@ interface ImageUploadProps {
   onChange: (url: string, meta?: { provider?: string; status?: string }) => void;
   label?: string;
   useExternalStorage?: boolean;
+  /** Show compression presets + before/after size info (used on product forms) */
+  enableCompressionOptions?: boolean;
 }
 
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
-const TARGET_SIZE = 100 * 1024; // 100KB target
+const MAX_FILE_SIZE = 12 * 1024 * 1024; // 12MB source limit (compressed down before upload)
+const HARD_LIMIT_NO_COMPRESS = 1 * 1024 * 1024; // 1MB when compression is disabled
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-const compressImage = (file: File, targetBytes: number): Promise<File> => {
+type PresetKey = "small" | "balanced" | "high";
+
+const PRESETS: Record<PresetKey, { label: string; targetKB: number; maxDim: number }> = {
+  small: { label: "Small (50KB)", targetKB: 50, maxDim: 900 },
+  balanced: { label: "Balanced (100KB)", targetKB: 100, maxDim: 1200 },
+  high: { label: "High quality (300KB)", targetKB: 300, maxDim: 1600 },
+};
+
+const formatSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)}MB` : `${Math.round(bytes / 1024)}KB`);
+
+const compressImage = (file: File, targetBytes: number, maxDim = 1200): Promise<File> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -27,7 +39,6 @@ const compressImage = (file: File, targetBytes: number): Promise<File> => {
       let { width, height } = img;
 
       // Scale down if very large
-      const maxDim = 1200;
       if (width > maxDim || height > maxDim) {
         const ratio = Math.min(maxDim / width, maxDim / height);
         width = Math.round(width * ratio);
@@ -39,12 +50,13 @@ const compressImage = (file: File, targetBytes: number): Promise<File> => {
       ctx.drawImage(img, 0, 0, width, height);
 
       // Iteratively reduce quality to hit target
-      let quality = 0.8;
+      let quality = 0.85;
       let blob: Blob | null = null;
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 8; i++) {
         blob = await new Promise<Blob | null>(r => canvas.toBlob(r, "image/webp", quality));
         if (!blob || blob.size <= targetBytes) break;
         quality -= 0.1;
+        if (quality < 0.3) quality = 0.3;
       }
 
       if (!blob) return reject(new Error("Compression failed"));
@@ -56,10 +68,11 @@ const compressImage = (file: File, targetBytes: number): Promise<File> => {
   });
 };
 
-const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true }: ImageUploadProps) => {
+const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true, enableCompressionOptions = false }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadMeta, setUploadMeta] = useState<{ provider?: string; status?: string; size?: string } | null>(null);
+  const [uploadMeta, setUploadMeta] = useState<{ provider?: string; status?: string; size?: string; original?: string; saved?: number } | null>(null);
+  const [preset, setPreset] = useState<PresetKey>("balanced");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,8 +81,9 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
     setError(null);
     setUploadMeta(null);
 
-    if (file.size > MAX_FILE_SIZE) {
-      setError("File size exceeds 1MB limit");
+    const sizeLimit = enableCompressionOptions ? MAX_FILE_SIZE : HARD_LIMIT_NO_COMPRESS;
+    if (file.size > sizeLimit) {
+      setError(`File size exceeds ${formatSize(sizeLimit)} limit`);
       return;
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -79,15 +93,19 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
 
     setUploading(true);
 
-    // Auto-compress to under 100KB
+    // Auto-compress to the selected target size
+    const target = PRESETS[enableCompressionOptions ? preset : "balanced"];
+    const targetBytes = target.targetKB * 1024;
     let optimizedFile = file;
     try {
-      if (file.size > TARGET_SIZE) {
-        optimizedFile = await compressImage(file, TARGET_SIZE);
+      if (file.size > targetBytes) {
+        optimizedFile = await compressImage(file, targetBytes, target.maxDim);
       }
     } catch {
       console.warn("Compression failed, using original file");
     }
+    const originalLabel = formatSize(file.size);
+    const savedPct = file.size > optimizedFile.size ? Math.round((1 - optimizedFile.size / file.size) * 100) : 0;
 
     if (useExternalStorage) {
       try {
@@ -117,25 +135,24 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
         if (!res.ok) {
           // Fallback to Supabase storage
           console.warn("External upload failed, falling back to Supabase storage:", data.error);
-        await fallbackToSupabase(optimizedFile);
+          await fallbackToSupabase(optimizedFile, originalLabel, savedPct);
           return;
         }
 
-        const sizeKB = (optimizedFile.size / 1024).toFixed(0);
-        setUploadMeta({ provider: data.provider, status: data.status, size: `${sizeKB}KB` });
+        setUploadMeta({ provider: data.provider, status: data.status, size: formatSize(optimizedFile.size), original: originalLabel, saved: savedPct });
         onChange(data.url, { provider: data.provider, status: data.status });
       } catch (err) {
         console.warn("External upload error, falling back:", err);
-      await fallbackToSupabase(optimizedFile);
+        await fallbackToSupabase(optimizedFile, originalLabel, savedPct);
       }
     } else {
-      await fallbackToSupabase(file);
+      await fallbackToSupabase(optimizedFile, originalLabel, savedPct);
     }
 
     setUploading(false);
   };
 
-  const fallbackToSupabase = async (file: File) => {
+  const fallbackToSupabase = async (file: File, originalLabel?: string, savedPct = 0) => {
     const ext = file.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
@@ -147,8 +164,7 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
     }
 
     const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    const sizeKB = (file.size / 1024).toFixed(0);
-    setUploadMeta({ provider: "supabase", status: "fallback", size: `${sizeKB}KB` });
+    setUploadMeta({ provider: "supabase", status: "fallback", size: formatSize(file.size), original: originalLabel, saved: savedPct });
     onChange(urlData.publicUrl, { provider: "supabase", status: "fallback" });
     setUploading(false);
   };
@@ -156,6 +172,25 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
   return (
     <div className="space-y-2">
       {label && <span className="text-sm font-medium">{label}</span>}
+      {enableCompressionOptions && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-dashed bg-muted/40 p-2">
+          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <ImageDown className="h-3.5 w-3.5" /> Compress to
+          </span>
+          {(Object.keys(PRESETS) as PresetKey[]).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setPreset(k)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
+                preset === k ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary"
+              }`}
+            >
+              {PRESETS[k].label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <Input
           value={value}
@@ -174,7 +209,7 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
       {uploadMeta?.provider && (
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Badge variant="outline" className="text-[10px]">
             {uploadMeta.provider}
           </Badge>
@@ -186,6 +221,11 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
               optimized: {uploadMeta.size}
             </Badge>
           )}
+          {uploadMeta.original && uploadMeta.saved ? (
+            <Badge variant="secondary" className="text-[10px]">
+              {uploadMeta.original} → saved {uploadMeta.saved}%
+            </Badge>
+          ) : null}
         </div>
       )}
       {value && (
