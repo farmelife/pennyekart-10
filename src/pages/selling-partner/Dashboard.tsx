@@ -580,9 +580,9 @@ const SellingPartnerDashboard = () => {
                         )}
                       </select>
                     </div>
-                    <ImageUpload bucket="products" value={form.image_url} onChange={url => setForm({ ...form, image_url: url })} label="Image 1 (Upload or paste URL)" />
-                    <ImageUpload bucket="products" value={form.image_url_2} onChange={url => setForm({ ...form, image_url_2: url })} label="Image 2" />
-                    <ImageUpload bucket="products" value={form.image_url_3} onChange={url => setForm({ ...form, image_url_3: url })} label="Image 3" />
+                    <ImageUpload enableCompressionOptions bucket="products" value={form.image_url} onChange={url => setForm({ ...form, image_url: url })} label="Image 1 (Upload or paste URL)" />
+                    <ImageUpload enableCompressionOptions bucket="products" value={form.image_url_2} onChange={url => setForm({ ...form, image_url_2: url })} label="Image 2" />
+                    <ImageUpload enableCompressionOptions bucket="products" value={form.image_url_3} onChange={url => setForm({ ...form, image_url_3: url })} label="Image 3" />
                     <div><Label>Video URL</Label><Input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} placeholder="Paste YouTube or video link" /></div>
                     <div><Label>Wallet Points</Label><Input type="number" min="0" value={form.wallet_points} onChange={e => setForm({ ...form, wallet_points: e.target.value })} placeholder="Points earned per purchase" /></div>
                     <div>
@@ -724,9 +724,9 @@ const SellingPartnerDashboard = () => {
                       )}
                     </select>
                   </div>
-                  <ImageUpload bucket="products" value={editForm.image_url} onChange={url => setEditForm({ ...editForm, image_url: url })} label="Image 1" />
-                  <ImageUpload bucket="products" value={editForm.image_url_2} onChange={url => setEditForm({ ...editForm, image_url_2: url })} label="Image 2" />
-                  <ImageUpload bucket="products" value={editForm.image_url_3} onChange={url => setEditForm({ ...editForm, image_url_3: url })} label="Image 3" />
+                  <ImageUpload enableCompressionOptions bucket="products" value={editForm.image_url} onChange={url => setEditForm({ ...editForm, image_url: url })} label="Image 1" />
+                  <ImageUpload enableCompressionOptions bucket="products" value={editForm.image_url_2} onChange={url => setEditForm({ ...editForm, image_url_2: url })} label="Image 2" />
+                  <ImageUpload enableCompressionOptions bucket="products" value={editForm.image_url_3} onChange={url => setEditForm({ ...editForm, image_url_3: url })} label="Image 3" />
                   <div><Label>Video URL</Label><Input value={editForm.video_url} onChange={e => setEditForm({ ...editForm, video_url: e.target.value })} placeholder="Paste YouTube or video link" /></div>
                   <div><Label>Wallet Points</Label><Input type="number" min="0" value={editForm.wallet_points} onChange={e => setEditForm({ ...editForm, wallet_points: e.target.value })} placeholder="Points earned per purchase" /></div>
                    <div className="rounded-lg border p-3 space-y-3">
