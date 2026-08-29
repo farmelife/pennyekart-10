@@ -426,6 +426,10 @@ const Profile = () => {
         )}
 
         {/* Today's Work — only renders for users matched as a Pennyekart agent in e-Life */}
+        {activeSection === "profile" && user && (
+          <VerifyAccountCard userId={user.id} profileMobile={profile?.mobile_number ?? null} />
+        )}
+
         {activeSection === "profile" && <TodaysWorkSection />}
 
         {/* Scratch & Win rewards */}
