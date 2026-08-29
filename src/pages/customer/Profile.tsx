@@ -18,6 +18,8 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import NotificationDetailDialog from "@/components/NotificationDetailDialog";
 import ScratchCardWidget from "@/components/ScratchCardWidget";
+import VerifyAccountCard from "@/components/customer/VerifyAccountCard";
+import { BadgeCheck } from "lucide-react";
 
 interface Order {
   id: string;
@@ -372,6 +374,9 @@ const Profile = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-lg">{profile?.full_name || "Customer"}</p>
+                    {(profile as unknown as { is_verified?: boolean })?.is_verified && (
+                      <BadgeCheck className="h-5 w-5 text-sky-500" aria-label="Verified account" />
+                    )}
                     {profile?.is_super_admin && (
                       <Badge variant="destructive" className="text-[10px] uppercase tracking-wide">Super Admin</Badge>
                     )}
@@ -421,6 +426,10 @@ const Profile = () => {
         )}
 
         {/* Today's Work — only renders for users matched as a Pennyekart agent in e-Life */}
+        {activeSection === "profile" && user && (
+          <VerifyAccountCard userId={user.id} profileMobile={profile?.mobile_number ?? null} />
+        )}
+
         {activeSection === "profile" && <TodaysWorkSection />}
 
         {/* Scratch & Win rewards */}

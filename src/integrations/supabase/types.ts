@@ -1442,6 +1442,7 @@ export type Database = {
           is_available: boolean
           is_blocked: boolean
           is_super_admin: boolean
+          is_verified: boolean
           last_login_at: string | null
           latitude: number | null
           local_body_id: string | null
@@ -1454,6 +1455,9 @@ export type Database = {
           updated_at: string
           user_id: string
           user_type: string
+          verification_code: string | null
+          verification_code_expires_at: string | null
+          verified_at: string | null
           ward_number: number | null
         }
         Insert: {
@@ -1480,6 +1484,7 @@ export type Database = {
           is_available?: boolean
           is_blocked?: boolean
           is_super_admin?: boolean
+          is_verified?: boolean
           last_login_at?: string | null
           latitude?: number | null
           local_body_id?: string | null
@@ -1492,6 +1497,9 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_type?: string
+          verification_code?: string | null
+          verification_code_expires_at?: string | null
+          verified_at?: string | null
           ward_number?: number | null
         }
         Update: {
@@ -1518,6 +1526,7 @@ export type Database = {
           is_available?: boolean
           is_blocked?: boolean
           is_super_admin?: boolean
+          is_verified?: boolean
           last_login_at?: string | null
           latitude?: number | null
           local_body_id?: string | null
@@ -1530,6 +1539,9 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_type?: string
+          verification_code?: string | null
+          verification_code_expires_at?: string | null
+          verified_at?: string | null
           ward_number?: number | null
         }
         Relationships: [
