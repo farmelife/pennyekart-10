@@ -374,6 +374,9 @@ const Profile = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-lg">{profile?.full_name || "Customer"}</p>
+                    {(profile as unknown as { is_verified?: boolean })?.is_verified && (
+                      <BadgeCheck className="h-5 w-5 text-sky-500" aria-label="Verified account" />
+                    )}
                     {profile?.is_super_admin && (
                       <Badge variant="destructive" className="text-[10px] uppercase tracking-wide">Super Admin</Badge>
                     )}
