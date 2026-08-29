@@ -18,6 +18,8 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import NotificationDetailDialog from "@/components/NotificationDetailDialog";
 import ScratchCardWidget from "@/components/ScratchCardWidget";
+import VerifyAccountCard from "@/components/customer/VerifyAccountCard";
+import { BadgeCheck } from "lucide-react";
 
 interface Order {
   id: string;
