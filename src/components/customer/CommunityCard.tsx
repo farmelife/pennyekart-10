@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Users, UserPlus, Lock, Crown, Trash2, LogOut, Check, X, Loader2 } from "lucide-react";
+import { Users, UserPlus, Lock, Crown, Trash2, LogOut, Check, X, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
