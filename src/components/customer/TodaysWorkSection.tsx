@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isAfter, startOfDay } from "date-fns";
-import { CalendarIcon, Loader2, Plus, Save, Pencil, Trash2, Briefcase, CheckCircle2, XCircle, Users, Phone, MessageCircle, RefreshCw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CalendarIcon, Loader2, Plus, Save, Pencil, Trash2, Briefcase, CheckCircle2, XCircle, Users, Phone, MessageCircle, RefreshCw, ChevronDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ export const TodaysWorkSection = () => {
   const [viewMode, setViewMode] = useState<"day" | "all">("day");
   const [allLogs, setAllLogs] = useState<WorkLog[]>([]);
   const [allLoading, setAllLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   // Absent details state
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
