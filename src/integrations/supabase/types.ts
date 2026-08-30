@@ -248,6 +248,100 @@ export type Database = {
         }
         Relationships: []
       }
+      communities: {
+        Row: {
+          created_at: string
+          creator_user_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_user_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_user_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_invites: {
+        Row: {
+          community_id: string
+          created_at: string
+          created_by: string
+          id: string
+          invited_mobile: string
+          invited_user_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          invited_mobile: string
+          invited_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          invited_mobile?: string
+          invited_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_invites_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_search_history: {
         Row: {
           created_at: string
@@ -2406,6 +2500,51 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      am_i_verified: { Args: never; Returns: boolean }
+      cancel_community_invite: {
+        Args: { _invite_id: string }
+        Returns: boolean
+      }
+      create_community: { Args: { _name: string }; Returns: string }
+      get_community_members: {
+        Args: never
+        Returns: {
+          full_name: string
+          is_creator: boolean
+          joined_at: string
+          mobile_number: string
+          user_id: string
+        }[]
+      }
+      get_community_pending_invites: {
+        Args: never
+        Returns: {
+          created_at: string
+          invite_id: string
+          invited_mobile: string
+        }[]
+      }
+      get_my_community: {
+        Args: never
+        Returns: {
+          community_id: string
+          created_at: string
+          creator_name: string
+          is_creator: boolean
+          member_count: number
+          name: string
+        }[]
+      }
+      get_my_community_invites: {
+        Args: never
+        Returns: {
+          community_id: string
+          community_name: string
+          created_at: string
+          creator_name: string
+          invite_id: string
+        }[]
+      }
       get_next_purchase_number: { Args: never; Returns: number }
       get_orders_for_seller: {
         Args: { seller_user_id: string }
@@ -2446,7 +2585,19 @@ export type Database = {
         }[]
       }
       has_permission: { Args: { _permission_name: string }; Returns: boolean }
+      invite_to_community: { Args: { _mobile: string }; Returns: string }
+      is_community_creator: {
+        Args: { _community_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: never; Returns: boolean }
+      my_community_id: { Args: never; Returns: string }
+      my_normalized_mobile: { Args: never; Returns: string }
+      remove_community_member: { Args: { _user_id: string }; Returns: boolean }
+      respond_to_community_invite: {
+        Args: { _accept: boolean; _invite_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
