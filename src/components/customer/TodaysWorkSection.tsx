@@ -283,57 +283,18 @@ export const TodaysWorkSection = () => {
               <p className="text-xs text-muted-foreground text-center py-3">No work logs yet.</p>
             ) : (
               allLogs.map((log) => (
-                <div key={log.id} className="rounded-lg border bg-muted/20 p-3 text-sm space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="text-[10px]">{format(new Date(log.work_date), "dd MMM yyyy")}</Badge>
-                      <span className="text-[11px] text-muted-foreground">
-                        {format(new Date(log.created_at), "HH:mm")}
-                        {log.updated_at !== log.created_at && (
-                          <span className="ml-1">(edited)</span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex gap-1">
-                      {editingId !== log.id && (
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingId(log.id); setEditingText(log.work_details); }}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete work log?</AlertDialogTitle>
-                            <AlertDialogDescription>This will be removed from e-Life Society too.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(log.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                  {editingId === log.id ? (
-                    <div className="space-y-2">
-                      <Textarea value={editingText} onChange={(e) => setEditingText(e.target.value)} rows={3} className="resize-none" />
-                      <div className="flex gap-2 justify-end">
-                        <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditingText(""); }}>Cancel</Button>
-                        <Button size="sm" onClick={() => handleUpdateAll(log.id)} disabled={saving}>
-                          {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="whitespace-pre-wrap text-sm">{log.work_details}</p>
-                  )}
-                </div>
+                <WorkLogCard
+                  key={log.id}
+                  log={log}
+                  editingId={editingId}
+                  setEditingId={setEditingId}
+                  editingText={editingText}
+                  setEditingText={setEditingText}
+                  saving={saving}
+                  onUpdate={() => handleUpdateAll(log.id)}
+                  onDelete={() => handleDelete(log.id)}
+                  dateLabel={format(new Date(log.work_date), "dd MMM yyyy")}
+                />
               ))
             )}
           </div>
@@ -395,55 +356,18 @@ export const TodaysWorkSection = () => {
             <p className="text-xs text-muted-foreground text-center py-3">No work logs for this date yet.</p>
           ) : (
             logs.map((log) => (
-              <div key={log.id} className="rounded-lg border bg-muted/20 p-3 text-sm space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-muted-foreground">
-                    {format(new Date(log.created_at), "dd MMM yyyy • HH:mm")}
-                    {log.updated_at !== log.created_at && (
-                      <span className="ml-1">(edited {format(new Date(log.updated_at), "HH:mm")})</span>
-                    )}
-                  </span>
-                  <div className="flex gap-1">
-                    {editingId !== log.id && (
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingId(log.id); setEditingText(log.work_details); }}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete work log?</AlertDialogTitle>
-                          <AlertDialogDescription>This will be removed from e-Life Society too.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(log.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-
-                {editingId === log.id ? (
-                  <div className="space-y-2">
-                    <Textarea value={editingText} onChange={(e) => setEditingText(e.target.value)} rows={3} className="resize-none" />
-                    <div className="flex gap-2 justify-end">
-                      <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditingText(""); }}>Cancel</Button>
-                      <Button size="sm" onClick={() => handleUpdate(log.id)} disabled={saving}>
-                        {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="whitespace-pre-wrap text-sm">{log.work_details}</p>
-                )}
-              </div>
+              <WorkLogCard
+                key={log.id}
+                log={log}
+                editingId={editingId}
+                setEditingId={setEditingId}
+                editingText={editingText}
+                setEditingText={setEditingText}
+                saving={saving}
+                onUpdate={() => handleUpdate(log.id)}
+                onDelete={() => handleDelete(log.id)}
+                dateLabel={format(new Date(log.created_at), "dd MMM yyyy • HH:mm")}
+              />
             ))
           )}
         </div>
@@ -471,6 +395,110 @@ export const TodaysWorkSection = () => {
         )}
       </CardContent>
     </Card>
+  );
+};
+
+type WorkLogCardProps = {
+  log: WorkLog;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+  editingText: string;
+  setEditingText: (text: string) => void;
+  saving: boolean;
+  onUpdate: () => void;
+  onDelete: () => void;
+  dateLabel: string;
+};
+
+const WorkLogCard = ({
+  log,
+  editingId,
+  setEditingId,
+  editingText,
+  setEditingText,
+  saving,
+  onUpdate,
+  onDelete,
+  dateLabel,
+}: WorkLogCardProps) => {
+  const isEditing = editingId === log.id;
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="rounded-xl border bg-card/80 backdrop-blur-sm overflow-hidden shadow-sm" style={{ borderColor: "hsl(var(--neon-green))", borderWidth: "1.5px" }}>
+      <CollapsibleTrigger asChild>
+        <button className="w-full text-left group">
+          <div
+            className="flex items-center justify-between gap-3 p-3 transition-all duration-300"
+            style={{
+              background: open
+                ? "linear-gradient(135deg, hsl(var(--neon-green)) 0%, hsl(var(--neon-green-bright)) 100%)"
+                : "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.18) 100%)",
+            }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge variant="outline" className="text-[10px] shrink-0 border-[hsl(var(--neon-green))] text-[hsl(var(--neon-green))]">
+                {dateLabel}
+              </Badge>
+              <span className="text-sm font-medium truncate text-foreground group-hover:text-[hsl(var(--neon-green))]">
+                {log.work_details.split("\n")[0].slice(0, 45)}
+                {log.work_details.length > 45 || log.work_details.includes("\n") ? "…" : ""}
+              </span>
+            </div>
+            <ChevronDown className={cn("h-4 w-4 shrink-0 text-[hsl(var(--neon-green))] transition-transform duration-300", open && "rotate-180")} />
+          </div>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="p-3 space-y-3 border-t" style={{ borderColor: "hsl(var(--neon-green))", borderWidth: "1px" }}>
+          {isEditing ? (
+            <div className="space-y-2">
+              <Textarea value={editingText} onChange={(e) => setEditingText(e.target.value)} rows={3} className="resize-none" />
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditingText(""); }}>Cancel</Button>
+                <Button size="sm" onClick={onUpdate} disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                  Save
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="whitespace-pre-wrap text-sm">{log.work_details}</p>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {log.updated_at !== log.created_at && (
+                    <span className="ml-1">(edited {format(new Date(log.updated_at), "HH:mm")})</span>
+                  )}
+                </span>
+                <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingId(log.id); setEditingText(log.work_details); }}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete work log?</AlertDialogTitle>
+                        <AlertDialogDescription>This will be removed from e-Life Society too.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
 
