@@ -219,24 +219,24 @@ export const TodaysWorkSection = () => {
         boxShadow: "0 0 24px hsl(var(--neon-green) / 0.15)",
       }}
     >
-      <CollapsibleTrigger asChild>
-        <button type="button" className="w-full text-left">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2 flex-wrap">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Briefcase className="h-4 w-4" style={{ color: "hsl(var(--neon-green-bright))" }} />
-              {isToday ? "Today's Work- ഇന്നത്തെ വർക്ക്" : `Work — ${format(date, "PPP")}`}
-              <ChevronDown
-                className="h-4 w-4 transition-transform duration-300"
-                style={{ color: "hsl(var(--neon-green-bright))", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-              />
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Synced with e-Life Society • Agent: <span className="font-medium">{agent.name}</span>{" "}
-              <Badge variant="secondary" className="ml-1 text-[10px]">{agent.role}</Badge>
-            </CardDescription>
-          </div>
+          <CollapsibleTrigger asChild>
+            <button type="button" className="text-left">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Briefcase className="h-4 w-4" style={{ color: "hsl(var(--neon-green-bright))" }} />
+                {isToday ? "Today's Work- ഇന്നത്തെ വർക്ക്" : `Work — ${format(date, "PPP")}`}
+                <ChevronDown
+                  className="h-4 w-4 transition-transform duration-300"
+                  style={{ color: "hsl(var(--neon-green-bright))", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Synced with e-Life Society • Agent: <span className="font-medium">{agent.name}</span>{" "}
+                <Badge variant="secondary" className="ml-1 text-[10px]">{agent.role}</Badge>
+              </CardDescription>
+            </button>
+          </CollapsibleTrigger>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn("gap-2", !isToday && "border-primary/40")}>
