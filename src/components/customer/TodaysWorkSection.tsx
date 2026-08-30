@@ -449,7 +449,7 @@ const WorkLogCard = ({
           </div>
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+      <CollapsibleContent>
         <div className="p-3 space-y-3 border-t" style={{ borderColor: "hsl(var(--neon-green))", borderWidth: "1px" }}>
           {isEditing ? (
             <div className="space-y-2">
