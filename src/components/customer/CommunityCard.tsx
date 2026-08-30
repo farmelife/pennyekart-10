@@ -65,6 +65,11 @@ const CommunityCard = ({ userId }: Props) => {
   // (incoming invite to respond to, or a community the user manages).
   const autoOpen = !community ? incoming.length > 0 : community.is_creator;
 
+  // Auto-expand when actionable content arrives (incoming invites or creator view).
+  useEffect(() => {
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
+
   const load = useCallback(async () => {
     setLoading(true);
     await rpc("prune_inactive_community_members");
