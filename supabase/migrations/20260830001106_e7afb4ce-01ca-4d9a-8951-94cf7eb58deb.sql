@@ -1,0 +1,27 @@
+REVOKE EXECUTE ON FUNCTION public.is_community_creator(uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.my_community_id() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.my_normalized_mobile() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.am_i_verified() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.get_my_community() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.create_community(text) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.invite_to_community(text) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.get_my_community_invites() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.respond_to_community_invite(uuid, boolean) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.get_community_members() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.get_community_pending_invites() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.remove_community_member(uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.cancel_community_invite(uuid) FROM anon, public;
+
+GRANT EXECUTE ON FUNCTION public.is_community_creator(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.my_community_id() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.my_normalized_mobile() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.am_i_verified() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_community() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_community(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.invite_to_community(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_community_invites() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.respond_to_community_invite(uuid, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_community_members() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_community_pending_invites() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.remove_community_member(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.cancel_community_invite(uuid) TO authenticated;
