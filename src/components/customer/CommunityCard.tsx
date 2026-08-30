@@ -214,13 +214,13 @@ const CommunityCard = ({ userId }: Props) => {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="rounded-xl border border-primary/20 overflow-hidden bg-gradient-to-br from-primary/15 via-card to-accent/10 shadow-sm"
+      className="rounded-xl border border-neonblue/30 overflow-hidden bg-gradient-to-br from-neonblue/15 via-card to-neonblue-bright/10 shadow-sm"
     >
       {/* Gradient header — clickable trigger */}
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          className="w-full text-left bg-gradient-to-r from-primary via-primary/90 to-accent text-primary-foreground px-4 py-3 flex items-center gap-3 hover:opacity-95 transition-opacity"
+          className="w-full text-left bg-gradient-to-r from-neonblue via-neonblue to-neonblue-bright text-white px-4 py-3 flex items-center gap-3 hover:opacity-95 transition-opacity"
         >
           <span className="h-9 w-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
             <Users className="h-5 w-5" />
