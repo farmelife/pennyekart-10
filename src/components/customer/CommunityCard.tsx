@@ -59,6 +59,11 @@ const CommunityCard = ({ userId }: Props) => {
   const [newName, setNewName] = useState("");
   const [inviteMobile, setInviteMobile] = useState("");
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  // Expand the card automatically when there is something actionable
+  // (incoming invite to respond to, or a community the user manages).
+  const autoOpen = !community ? incoming.length > 0 : community.is_creator;
 
   const load = useCallback(async () => {
     setLoading(true);
