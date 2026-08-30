@@ -268,6 +268,7 @@ export const TodaysWorkSection = () => {
         </div>
       </CardHeader>
 
+      <CollapsibleContent>
       <CardContent className="space-y-4">
         {/* View toggle */}
         <div className="flex items-center gap-2">
