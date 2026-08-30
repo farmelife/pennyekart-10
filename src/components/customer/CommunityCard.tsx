@@ -333,6 +333,26 @@ const CommunityCard = ({ userId }: Props) => {
                     </div>
                   ))}
                 </div>
+
+                <div className="pt-2 border-t space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Members with no order in the last 30 days are removed automatically.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1"
+                    disabled={busy || members.filter((m) => !m.is_creator).length > 0}
+                    onClick={handleDeleteCommunity}
+                  >
+                    <Trash2 className="h-4 w-4" /> Delete community
+                  </Button>
+                  {members.filter((m) => !m.is_creator).length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Remove all members first to enable deletion.
+                    </p>
+                  )}
+                </div>
               </>
             ) : (
               <>
