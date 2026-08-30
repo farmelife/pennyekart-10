@@ -409,7 +409,9 @@ export const TodaysWorkSection = () => {
         </>
         )}
       </CardContent>
+      </CollapsibleContent>
     </Card>
+    </Collapsible>
   );
 };
 
