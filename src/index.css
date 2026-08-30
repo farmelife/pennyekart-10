@@ -38,6 +38,8 @@
 
     --neon-blue: 205 100% 58%;
     --neon-blue-bright: 190 100% 50%;
+    --neon-green: 142 76% 45%;
+    --neon-green-bright: 150 100% 55%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -75,6 +77,8 @@
 
     --neon-blue: 205 100% 58%;
     --neon-blue-bright: 190 100% 50%;
+    --neon-green: 142 76% 45%;
+    --neon-green-bright: 150 100% 55%;
   }
 }
 
