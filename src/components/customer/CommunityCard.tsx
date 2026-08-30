@@ -61,6 +61,7 @@ const CommunityCard = ({ userId }: Props) => {
 
   const load = useCallback(async () => {
     setLoading(true);
+    await rpc("prune_inactive_community_members");
     const { data: prof } = await supabase
       .from("profiles")
       .select("is_verified")
@@ -155,6 +156,24 @@ const CommunityCard = ({ userId }: Props) => {
       return;
     }
     toast.success(memberUserId === userId ? "You left the community" : "Member removed");
+    load();
+  };
+
+  const handleDeleteCommunity = async () => {
+    const others = members.filter((m) => !m.is_creator).length;
+    if (others > 0) {
+      toast.error("Remove all members before deleting the community");
+      return;
+    }
+    if (!window.confirm("Delete your community? This cannot be undone.")) return;
+    setBusy(true);
+    const { error } = await rpc("delete_my_community");
+    setBusy(false);
+    if (error) {
+      toast.error(error.message.replace(/^.*?:\s*/, ""));
+      return;
+    }
+    toast.success("Community deleted");
     load();
   };
 
