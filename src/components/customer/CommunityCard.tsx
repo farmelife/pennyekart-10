@@ -61,15 +61,6 @@ const CommunityCard = ({ userId }: Props) => {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Expand the card automatically when there is something actionable
-  // (incoming invite to respond to, or a community the user manages).
-  const autoOpen = !community ? incoming.length > 0 : community.is_creator;
-
-  // Auto-expand when actionable content arrives (incoming invites or creator view).
-  useEffect(() => {
-    if (autoOpen) setOpen(true);
-  }, [autoOpen]);
-
   const load = useCallback(async () => {
     setLoading(true);
     await rpc("prune_inactive_community_members");
@@ -201,7 +192,7 @@ const CommunityCard = ({ userId }: Props) => {
 
   if (loading) {
     return (
-      <Card className="border-primary/20">
+      <Card className="border-neonblue/30">
         <div className="p-6 flex items-center justify-center text-muted-foreground gap-2">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading community...
         </div>
@@ -223,13 +214,13 @@ const CommunityCard = ({ userId }: Props) => {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="rounded-xl border border-primary/20 overflow-hidden bg-gradient-to-br from-primary/15 via-card to-accent/10 shadow-sm"
+      className="rounded-xl border border-neonblue/30 overflow-hidden bg-gradient-to-br from-neonblue/15 via-card to-neonblue-bright/10 shadow-sm"
     >
       {/* Gradient header — clickable trigger */}
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          className="w-full text-left bg-gradient-to-r from-primary via-primary/90 to-accent text-primary-foreground px-4 py-3 flex items-center gap-3 hover:opacity-95 transition-opacity"
+          className="w-full text-left bg-gradient-to-r from-neonblue via-neonblue to-neonblue-bright text-white px-4 py-3 flex items-center gap-3 hover:opacity-95 transition-opacity"
         >
           <span className="h-9 w-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
             <Users className="h-5 w-5" />
