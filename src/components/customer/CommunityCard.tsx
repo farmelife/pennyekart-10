@@ -196,184 +196,214 @@ const CommunityCard = ({ userId }: Props) => {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6 flex items-center justify-center text-muted-foreground gap-2">
+      <Card className="border-primary/20">
+        <div className="p-6 flex items-center justify-center text-muted-foreground gap-2">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading community...
-        </CardContent>
+        </div>
       </Card>
     );
   }
 
+  const headerSubtitle = community
+    ? community.is_creator
+      ? `${community.name} · ${community.member_count} member${community.member_count === 1 ? "" : "s"}`
+      : `${community.name} · Member`
+    : isVerified
+      ? incoming.length > 0
+        ? `${incoming.length} invitation${incoming.length === 1 ? "" : "s"} for you`
+        : "Create or join a community"
+      : "Verify to unlock";
+
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Users className="h-4 w-4 text-primary" /> My Community
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* No community yet */}
-        {!community && !isVerified && (
-          <div className="flex gap-3 rounded-lg border bg-muted/40 p-4">
-            <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium">Verify your account first</p>
-              <p className="text-xs text-muted-foreground">
-                Only verified accounts can create or join a community. Use the verification card above to get your blue tick.
-              </p>
-            </div>
-          </div>
-        )}
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="rounded-xl border border-primary/20 overflow-hidden bg-gradient-to-br from-primary/15 via-card to-accent/10 shadow-sm"
+    >
+      {/* Gradient header — clickable trigger */}
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="w-full text-left bg-gradient-to-r from-primary via-primary/90 to-accent text-primary-foreground px-4 py-3 flex items-center gap-3 hover:opacity-95 transition-opacity"
+        >
+          <span className="h-9 w-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+            <Users className="h-5 w-5" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block font-heading text-base font-bold leading-tight">My Community</span>
+            <span className="block text-xs opacity-90 truncate">{headerSubtitle}</span>
+          </span>
+          <ChevronDown
+            className={`h-5 w-5 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      </CollapsibleTrigger>
 
-        {!community && isVerified && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="community-name">Create your community</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="community-name"
-                  placeholder="Community name"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  maxLength={60}
-                />
-                <Button onClick={handleCreate} disabled={busy}>Create</Button>
+      <CollapsibleContent>
+        <div className="p-4 space-y-4">
+          {/* No community yet */}
+          {!community && !isVerified && (
+            <div className="flex gap-3 rounded-lg border bg-muted/40 p-4">
+              <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Verify your account first</p>
+                <p className="text-xs text-muted-foreground">
+                  Only verified accounts can create or join a community. Use the verification card above to get your blue tick.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">You can belong to only one community.</p>
             </div>
+          )}
 
-            {incoming.length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <p className="text-sm font-medium">Invitations for you</p>
-                {incoming.map((inv) => (
-                  <div key={inv.invite_id} className="flex items-center gap-2 rounded-lg border p-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{inv.community_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">Invited by {inv.creator_name}</p>
-                    </div>
-                    <Button size="sm" disabled={busy} onClick={() => handleRespond(inv.invite_id, true)} className="gap-1">
-                      <Check className="h-3.5 w-3.5" /> Accept
-                    </Button>
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => handleRespond(inv.invite_id, false)}>
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* In a community */}
-        {community && (
-          <>
-            <div className="rounded-lg border bg-muted/30 p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">{community.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Created by {community.is_creator ? "you" : community.creator_name}
-                  </p>
+          {!community && isVerified && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="community-name">Create your community</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="community-name"
+                    placeholder="Community name"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    maxLength={60}
+                  />
+                  <Button onClick={handleCreate} disabled={busy}>Create</Button>
                 </div>
-                <Badge variant="secondary" className="gap-1 shrink-0">
-                  {community.is_creator && <Crown className="h-3 w-3" />}
-                  {community.is_creator ? "Creator" : "Member"}
-                </Badge>
+                <p className="text-xs text-muted-foreground">You can belong to only one community.</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {community.member_count} member{community.member_count === 1 ? "" : "s"}
-              </p>
-            </div>
 
-            {community.is_creator ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="invite-mobile">Invite a member by mobile number</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="invite-mobile"
-                      inputMode="numeric"
-                      placeholder="10-digit number"
-                      value={inviteMobile}
-                      onChange={(e) => setInviteMobile(digitsOnly(e.target.value).slice(0, 10))}
-                    />
-                    <Button onClick={handleInvite} disabled={busy} className="gap-1">
-                      <UserPlus className="h-4 w-4" /> Invite
-                    </Button>
-                  </div>
-                </div>
-
-                {pending.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Pending invites</p>
-                    {pending.map((inv) => (
-                      <div key={inv.invite_id} className="flex items-center gap-2 rounded-lg border p-2.5">
-                        <p className="text-sm flex-1">{inv.invited_mobile}</p>
-                        <Badge variant="outline" className="text-xs">Pending</Badge>
-                        <Button size="icon" variant="ghost" disabled={busy} onClick={() => handleCancelInvite(inv.invite_id)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Members ({members.length})</p>
-                  {members.map((m) => (
-                    <div key={m.user_id} className="flex items-center gap-2 rounded-lg border p-3">
+              {incoming.length > 0 && (
+                <div className="space-y-2 pt-2 border-t">
+                  <p className="text-sm font-medium">Invitations for you</p>
+                  {incoming.map((inv) => (
+                    <div key={inv.invite_id} className="flex items-center gap-2 rounded-lg border p-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate flex items-center gap-1">
-                          {m.full_name || "Member"}
-                          {m.is_creator && <Crown className="h-3 w-3 text-primary" />}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {m.mobile_number || "—"} · joined {new Date(m.joined_at).toLocaleDateString()}
-                        </p>
+                        <p className="text-sm font-medium truncate">{inv.community_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">Invited by {inv.creator_name}</p>
                       </div>
-                      {!m.is_creator && (
-                        <Button size="icon" variant="ghost" disabled={busy} onClick={() => handleRemove(m.user_id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
+                      <Button size="sm" disabled={busy} onClick={() => handleRespond(inv.invite_id, true)} className="gap-1">
+                        <Check className="h-3.5 w-3.5" /> Accept
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => handleRespond(inv.invite_id, false)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   ))}
                 </div>
+              )}
+            </>
+          )}
 
-                <div className="pt-2 border-t space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    Members with no order in the last 30 days are removed automatically.
-                  </p>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="gap-1"
-                    disabled={busy || members.filter((m) => !m.is_creator).length > 0}
-                    onClick={handleDeleteCommunity}
-                  >
-                    <Trash2 className="h-4 w-4" /> Delete community
-                  </Button>
-                  {members.filter((m) => !m.is_creator).length > 0 && (
+          {/* In a community */}
+          {community && (
+            <>
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{community.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      Remove all members first to enable deletion.
+                      Created by {community.is_creator ? "you" : community.creator_name}
                     </p>
-                  )}
+                  </div>
+                  <Badge variant="secondary" className="gap-1 shrink-0">
+                    {community.is_creator && <Crown className="h-3 w-3" />}
+                    {community.is_creator ? "Creator" : "Member"}
+                  </Badge>
                 </div>
-              </>
-            ) : (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  Only the community creator can view member details.
+                <p className="text-xs text-muted-foreground mt-2">
+                  {community.member_count} member{community.member_count === 1 ? "" : "s"}
                 </p>
-                <Button variant="outline" size="sm" className="gap-1" disabled={busy} onClick={() => handleRemove(userId)}>
-                  <LogOut className="h-4 w-4" /> Leave community
-                </Button>
-              </>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+
+              {community.is_creator ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-mobile">Invite a member by mobile number</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="invite-mobile"
+                        inputMode="numeric"
+                        placeholder="10-digit number"
+                        value={inviteMobile}
+                        onChange={(e) => setInviteMobile(digitsOnly(e.target.value).slice(0, 10))}
+                      />
+                      <Button onClick={handleInvite} disabled={busy} className="gap-1">
+                        <UserPlus className="h-4 w-4" /> Invite
+                      </Button>
+                    </div>
+                  </div>
+
+                  {pending.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Pending invites</p>
+                      {pending.map((inv) => (
+                        <div key={inv.invite_id} className="flex items-center gap-2 rounded-lg border p-2.5">
+                          <p className="text-sm flex-1">{inv.invited_mobile}</p>
+                          <Badge variant="outline" className="text-xs">Pending</Badge>
+                          <Button size="icon" variant="ghost" disabled={busy} onClick={() => handleCancelInvite(inv.invite_id)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Members ({members.length})</p>
+                    {members.map((m) => (
+                      <div key={m.user_id} className="flex items-center gap-2 rounded-lg border p-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate flex items-center gap-1">
+                            {m.full_name || "Member"}
+                            {m.is_creator && <Crown className="h-3 w-3 text-primary" />}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {m.mobile_number || "—"} · joined {new Date(m.joined_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {!m.is_creator && (
+                          <Button size="icon" variant="ghost" disabled={busy} onClick={() => handleRemove(m.user_id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 border-t space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Members with no order in the last 30 days are removed automatically.
+                    </p>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="gap-1"
+                      disabled={busy || members.filter((m) => !m.is_creator).length > 0}
+                      onClick={handleDeleteCommunity}
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete community
+                    </Button>
+                    {members.filter((m) => !m.is_creator).length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Remove all members first to enable deletion.
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Only the community creator can view member details.
+                  </p>
+                  <Button variant="outline" size="sm" className="gap-1" disabled={busy} onClick={() => handleRemove(userId)}>
+                    <LogOut className="h-4 w-4" /> Leave community
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
 
