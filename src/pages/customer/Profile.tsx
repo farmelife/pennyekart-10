@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import NotificationDetailDialog from "@/components/NotificationDetailDialog";
 import ScratchCardWidget from "@/components/ScratchCardWidget";
 import VerifyAccountCard from "@/components/customer/VerifyAccountCard";
+import CommunityCard from "@/components/customer/CommunityCard";
 import { BadgeCheck } from "lucide-react";
 
 interface Order {
@@ -428,6 +429,11 @@ const Profile = () => {
         {/* Today's Work — only renders for users matched as a Pennyekart agent in e-Life */}
         {activeSection === "profile" && user && (
           <VerifyAccountCard userId={user.id} profileMobile={profile?.mobile_number ?? null} />
+        )}
+
+        {/* My Community */}
+        {activeSection === "profile" && user && (
+          <CommunityCard userId={user.id} />
         )}
 
         {activeSection === "profile" && <TodaysWorkSection />}
