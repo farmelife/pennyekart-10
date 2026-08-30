@@ -192,7 +192,7 @@ const CommunityCard = ({ userId }: Props) => {
 
   if (loading) {
     return (
-      <Card className="border-primary/20">
+      <Card className="border-neonblue/30">
         <div className="p-6 flex items-center justify-center text-muted-foreground gap-2">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading community...
         </div>
