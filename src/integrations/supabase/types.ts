@@ -2506,6 +2506,7 @@ export type Database = {
         Returns: boolean
       }
       create_community: { Args: { _name: string }; Returns: string }
+      delete_my_community: { Args: never; Returns: boolean }
       get_community_members: {
         Args: never
         Returns: {
@@ -2593,6 +2594,7 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
       my_community_id: { Args: never; Returns: string }
       my_normalized_mobile: { Args: never; Returns: string }
+      prune_inactive_community_members: { Args: never; Returns: number }
       remove_community_member: { Args: { _user_id: string }; Returns: boolean }
       respond_to_community_invite: {
         Args: { _accept: boolean; _invite_id: string }
